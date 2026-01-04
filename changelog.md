@@ -12,3 +12,4 @@
 - Renamed the app to DeepShot in the UI and docs.
 - Deployed Firestore rules and Hosting for the DeepShot project.
 - Documented `updatedAt` fields in the Firestore schema.
+- Initialized a git repository and pushed a private GitHub repo `DeepShot`.
