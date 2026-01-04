@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,58 +6,61 @@
 
 :root {
   --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
+  --foreground: 222.2 84% 4.9%;
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card-foreground: 222.2 84% 4.9%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 240 5.9% 10%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
   --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 240 10% 3.9%;
-  --chart-1: 12 76% 61%;
-  --chart-2: 173 58% 39%;
-  --chart-3: 197 37% 24%;
-  --chart-4: 43 74% 66%;
-  --chart-5: 27 87% 67%;
-  --radius: 0.75rem;
-  --font-sans: "Space Grotesk", system-ui, sans-serif;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+  --radius: 1rem;
+  --font-sans: "Inter", system-ui, sans-serif;
 }
 
 .dark {
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 3.9%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 10% 3.9%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 0 0% 98%;
-  --primary-foreground: 240 5.9% 10%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
+  /* Softer Dark Base (not OLED black) */
+  --background: 210 20% 6%;
+  /* #0a0f14 - softer, easier on eyes */
+  --foreground: 210 20% 95%;
+
+  /* Cards with more visibility */
+  --card: 210 15% 10%;
+  --card-foreground: 210 20% 95%;
+
+  --popover: 210 15% 10%;
+  --popover-foreground: 210 20% 95%;
+
+  /* Cyan Primary */
+  --primary: 180 70% 50%;
+  --primary-foreground: 180 100% 5%;
+
+  /* Emerald Secondary */
+  --secondary: 160 60% 45%;
+  --secondary-foreground: 160 100% 5%;
+
+  --muted: 210 15% 15%;
+  --muted-foreground: 210 10% 55%;
+
+  --accent: 180 70% 50%;
+  --accent-foreground: 180 100% 5%;
+
+  --destructive: 0 70% 55%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --ring: 240 4.9% 83.9%;
-  --chart-1: 220 70% 50%;
-  --chart-2: 160 60% 45%;
-  --chart-3: 30 80% 55%;
-  --chart-4: 280 65% 60%;
-  --chart-5: 340 75% 55%;
+
+  --border: 210 15% 18%;
+  --input: 210 15% 18%;
+  --ring: 180 70% 50%;
 }
 
 @layer base {
@@ -65,13 +68,91 @@
     @apply border-border;
   }
 
-  html,
-  body,
-  #root {
-    height: 100%;
+  body {
+    @apply bg-background text-foreground font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-100;
+  }
+}
+
+@layer components {
+
+  /* Bio-Luminescent Glass Panel */
+  .glass-panel {
+    @apply bg-[#141419]/40 backdrop-blur-xl border border-white/[0.08] shadow-2xl;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    /* Specular Top Highlight */
   }
 
-  body {
-    @apply bg-background text-foreground font-sans;
+  /* Liquid Glass Button/Pill */
+  .glass-pill {
+    @apply relative overflow-hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 transition-all duration-300 hover:bg-white/10 active:scale-95;
+    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .glass-pill:hover {
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+  }
+
+  .glass-pill.active {
+    @apply bg-cyan-500/20 border-cyan-400/50 text-cyan-50;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+  }
+
+  /* Aurora Background Container - NO PURPLE */
+  .aurora-bg {
+    background: radial-gradient(circle at 15% 50%, rgba(0, 240, 255, 0.05), transparent 40%),
+      radial-gradient(circle at 85% 30%, rgba(0, 212, 255, 0.05), transparent 40%);
+  }
+
+  /* Text Styles */
+  .text-neon {
+    @apply text-cyan-400;
+    filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.5));
+  }
+
+  .text-glow-green {
+    @apply text-[#00FF9D];
+    filter: drop-shadow(0 0 8px rgba(0, 255, 157, 0.4));
+  }
+
+  /* Calendar Specifics - Inverted logic for light-on-dark/glass */
+  .calendar-hero .rdp-day {
+    @apply w-16 h-16 text-lg font-light transition-all duration-300 rounded-2xl;
+  }
+
+  .calendar-hero .rdp-day_selected:not([disabled]) {
+    @apply bg-cyan-500/20 text-cyan-50 border border-cyan-400/50;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+  }
+
+  /* Fix calendar icons to match dark theme */
+  .invert-calendar-icon::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.5;
+    cursor: pointer;
+  }
+
+  .invert-calendar-icon::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  /* Pulsing Ring for Next Injection */
+  .animate-pulse-ring {
+    animation: pulse-ring 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 240, 255, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 240, 255, 0);
   }
 }

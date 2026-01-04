@@ -73,7 +73,9 @@ firebase deploy --only hosting
 ```
 
 ## Documentation loop
+- ⛔ **MANDATORY**: [AGENT_ENFORCEMENT.md](AGENT_ENFORCEMENT.md) — Agent compliance protocol
 - Project rules: [projectrules.md](projectrules.md)
 - Agent notes: [agent.md](agent.md)
 - Active tasks: [taskslist.md](taskslist.md)
 - Changelog: [changelog.md](changelog.md)
+

@@ -1,5 +1,11 @@
 # Project Rules
 
+> ## ⛔ MANDATORY: [AGENT_ENFORCEMENT.md](AGENT_ENFORCEMENT.md)
+> **All agents MUST read and comply with the enforcement protocol before starting work.**
+> **This is non-negotiable. Violations trigger immediate consequences.**
+
+---
+
 ## Scope rules
 - Primary goal: track TRT injections, compute dosage, and show schedules.
 - Must support multiple protocols with history preserved.

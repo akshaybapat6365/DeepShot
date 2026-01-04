@@ -144,13 +144,13 @@ function App() {
 
   const daysRemaining = nextInjectionDate
     ? Math.max(
-        0,
-        Math.ceil(
-          (startOfDay(nextInjectionDate).getTime() -
-            startOfDay(new Date()).getTime()) /
-            DAY_MS
-        )
+      0,
+      Math.ceil(
+        (startOfDay(nextInjectionDate).getTime() -
+          startOfDay(new Date()).getTime()) /
+        DAY_MS
       )
+    )
     : null;
 
   const mgPerInjection = activeProtocol
@@ -158,8 +158,8 @@ function App() {
     : null;
   const mgPerWeek = activeProtocol
     ? activeProtocol.doseMl *
-      activeProtocol.concentrationMgPerMl *
-      (7 / activeProtocol.intervalDays)
+    activeProtocol.concentrationMgPerMl *
+    (7 / activeProtocol.intervalDays)
     : null;
 
   const scheduleStart = activeProtocol
@@ -235,448 +235,249 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="relative isolate overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(34,197,94,0.15),_transparent_45%),radial-gradient(circle_at_20%_80%,_rgba(56,189,248,0.12),_transparent_40%)]" />
-        <div className="absolute -top-20 right-10 h-48 w-48 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div className="absolute bottom-10 left-10 h-48 w-48 rounded-full bg-cyan-500/20 blur-3xl" />
+    <div className="min-h-screen bg-[#080c10] text-foreground flex flex-col">
+      {/* Top Header Bar - Compact with all metrics */}
+      <header className="shrink-0 border-b border-white/10 bg-[#0a0e14]/90 backdrop-blur-md sticky top-0 z-20">
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 max-w-[1920px] mx-auto">
+          {/* Logo + Protocol Selector */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="size-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 grid place-items-center">
+                <Droplet className="size-4 text-white" />
+              </div>
+              <span className="text-lg font-semibold text-white hidden sm:block">TRT Tracker</span>
+            </div>
 
-        <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-10">
-          <header className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-3">
-              <Badge className="w-fit">DeepShot</Badge>
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight">DeepShot</h1>
-                <p className="text-muted-foreground">
-                  Track protocols, calculate dosage, and stay ahead of every injection.
-                </p>
+            {user && activeProtocol && (
+              <Button
+                variant="outline"
+                className="border-white/20 text-white/80 bg-white/5 hover:bg-white/10 gap-2"
+                onClick={handleOpenProtocolDialog}
+              >
+                <span className="text-amber-400 font-medium">E{activeProtocol.intervalDays}D</span>
+                <span className="text-white/40 text-sm hidden md:inline">Every {activeProtocol.intervalDays} days</span>
+              </Button>
+            )}
+          </div>
+
+          {/* Metrics - visible when logged in */}
+          {user && activeProtocol && (
+            <div className="flex items-center gap-6">
+              <div className="text-center hidden md:block">
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">Per Injection</p>
+                <p className="text-xl font-bold text-amber-400">{formatNumber(mgPerInjection ?? 0)} mg</p>
+              </div>
+              <div className="h-8 w-px bg-white/10 hidden md:block" />
+              <div className="text-center hidden md:block">
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">Weekly Total</p>
+                <p className="text-xl font-bold text-emerald-400">{formatNumber(mgPerWeek ?? 0)} mg</p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              {user ? (
-                <div className="flex items-center gap-3">
-                  <div className="text-right text-sm">
-                    <p className="text-xs text-muted-foreground">Signed in</p>
-                    <p className="font-medium">
-                      {user.displayName ?? user.email ?? "TRT member"}
-                    </p>
-                  </div>
-                  <Button variant="secondary" className="gap-2" onClick={handleLogout}>
-                    <LogOut className="size-4" />
-                    Sign out
-                  </Button>
-                </div>
-              ) : (
-                <Button className="gap-2" onClick={handleLogin}>
-                  <LogIn className="size-4" />
-                  Sign in with Google
-                </Button>
-              )}
-              <Button
-                className="gap-2"
-                onClick={() => handleOpenLogDialog()}
-                disabled={!user || !activeProtocol}
-              >
-                <Plus className="size-4" />
-                Log injection
-              </Button>
-            </div>
-          </header>
+          )}
 
-          {!user ? (
-            <Card className="border-border/60 bg-card/70">
-              <CardHeader>
-                <CardTitle>Sign in to get started</CardTitle>
-                <CardDescription>
-                  Your data is stored privately in Firestore and synced across devices.
-                </CardDescription>
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            {user ? (
+              <>
+                <Button
+                  className="gap-2 bg-amber-600 hover:bg-amber-500 text-white"
+                  onClick={() => handleOpenLogDialog()}
+                  disabled={!activeProtocol}
+                >
+                  <Plus className="size-4" />
+                  <span className="hidden sm:inline">Log Injection</span>
+                </Button>
+                <Button variant="ghost" size="sm" className="text-white/50 hover:text-white" onClick={handleLogout}>
+                  <LogOut className="size-4" />
+                </Button>
+              </>
+            ) : (
+              <Button className="gap-2 bg-amber-600 hover:bg-amber-500" onClick={handleLogin}>
+                <LogIn className="size-4" />
+                Sign In
+              </Button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content - Full Screen Calendar */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {!user ? (
+          <div className="flex-1 flex items-center justify-center p-4">
+            <Card className="max-w-md w-full bg-white/5 border-white/10">
+              <CardHeader className="text-center">
+                <div className="size-20 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 mx-auto grid place-items-center mb-4 shadow-lg shadow-amber-500/20">
+                  <CalendarDays className="size-10 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-white">TRT Tracker</CardTitle>
+                <CardDescription className="text-white/50">Track your testosterone protocol with precision.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="gap-2" onClick={handleLogin}>
+                <Button className="w-full gap-2 bg-amber-600 hover:bg-amber-500" onClick={handleLogin}>
                   <LogIn className="size-4" />
                   Continue with Google
                 </Button>
               </CardContent>
             </Card>
-          ) : (
-            <Tabs defaultValue="dashboard" className="space-y-6">
-              <TabsList className="grid w-full max-w-xs grid-cols-2">
-                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                <TabsTrigger value="calendar">Calendar</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="dashboard" className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <Card className="border-border/60 bg-card/70 shadow-lg shadow-black/20">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <CalendarDays className="size-4 text-emerald-400" />
-                        Next injection
-                      </CardTitle>
-                      <CardDescription>Based on your latest log</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <p className="text-2xl font-semibold">
-                        {nextInjectionDate
-                          ? formatDate(nextInjectionDate)
-                          : "No active protocol"}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {daysRemaining !== null
-                          ? `${daysRemaining} day${daysRemaining === 1 ? "" : "s"} remaining`
-                          : "Create a protocol to begin"}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-border/60 bg-card/70 shadow-lg shadow-black/20">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Droplet className="size-4 text-cyan-300" />
-                        mg per injection
-                      </CardTitle>
-                      <CardDescription>
-                        {activeProtocol
-                          ? `${formatNumber(activeProtocol.doseMl)} mL @ ${activeProtocol.concentrationMgPerMl} mg/mL`
-                          : "Set a protocol to calculate"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-semibold">
-                        {mgPerInjection !== null
-                          ? `${formatNumber(mgPerInjection)} mg`
-                          : "--"}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-border/60 bg-card/70 shadow-lg shadow-black/20">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Activity className="size-4 text-amber-300" />
-                        mg per week
-                      </CardTitle>
-                      <CardDescription>
-                        {activeProtocol
-                          ? `Interval ${activeProtocol.intervalDays} days`
-                          : "Waiting for protocol"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-semibold">
-                        {mgPerWeek !== null ? `${formatNumber(mgPerWeek)} mg` : "--"}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-border/60 bg-gradient-to-br from-emerald-500/15 via-cyan-500/10 to-transparent">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <CheckCircle2 className="size-4 text-emerald-300" />
-                        Ready to log?
-                      </CardTitle>
-                      <CardDescription>
-                        {activeProtocol
-                          ? "Record today or yesterday"
-                          : "Create a protocol to start logging"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <Button
-                        className="w-full gap-2"
-                        onClick={() => handleOpenLogDialog()}
-                        disabled={!activeProtocol}
-                      >
-                        <Plus className="size-4" />
-                        Log injection
-                      </Button>
-                      {!activeProtocol && (
-                        <Button
-                          variant="secondary"
-                          className="w-full gap-2"
-                          onClick={handleOpenProtocolDialog}
-                        >
-                          <Repeat className="size-4" />
-                          Start a protocol
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
+          </div>
+        ) : !activeProtocol ? (
+          <div className="flex-1 flex items-center justify-center p-4">
+            <Card className="max-w-md w-full bg-white/5 border-white/10">
+              <CardHeader className="text-center">
+                <div className="size-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-600/20 mx-auto grid place-items-center mb-4 border border-amber-500/30">
+                  <Repeat className="size-8 text-amber-400" />
                 </div>
+                <CardTitle className="text-white">No Active Protocol</CardTitle>
+                <CardDescription>Create a protocol to start tracking your injections.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full gap-2 bg-amber-600 hover:bg-amber-500" onClick={handleOpenProtocolDialog}>
+                  <Plus className="size-4" />
+                  Create Protocol
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
+            {/* Calendar Header */}
+            <div className="flex items-center justify-between mb-4 shrink-0">
+              <div className="flex items-center gap-4">
+                <Button variant="outline" size="icon" className="border-white/20 text-white/60 hover:text-white hover:bg-white/10" onClick={() => {
+                  const newDate = new Date(selectedDate || new Date());
+                  newDate.setMonth(newDate.getMonth() - 1);
+                  setSelectedDate(newDate);
+                }}>
+                  &lt;
+                </Button>
+                <h2 className="text-2xl md:text-3xl font-bold text-white">
+                  {(selectedDate || new Date()).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                </h2>
+                <Button variant="outline" size="icon" className="border-white/20 text-white/60 hover:text-white hover:bg-white/10" onClick={() => {
+                  const newDate = new Date(selectedDate || new Date());
+                  newDate.setMonth(newDate.getMonth() + 1);
+                  setSelectedDate(newDate);
+                }}>
+                  &gt;
+                </Button>
+              </div>
 
-                <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                  <Card className="border-border/60 bg-card/70">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Repeat className="size-4 text-emerald-300" />
-                        Active protocol
-                      </CardTitle>
-                      <CardDescription>Current schedule and dosing details</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {protocolsLoading ? (
-                        <p className="text-sm text-muted-foreground">
-                          Loading protocol details...
-                        </p>
-                      ) : activeProtocol ? (
-                        <>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="secondary">{activeProtocol.name}</Badge>
-                            <Badge variant="outline">Active</Badge>
-                          </div>
-                          <div className="grid gap-4 md:grid-cols-3">
-                            <div>
-                              <p className="text-xs uppercase text-muted-foreground">Start date</p>
-                              <p className="font-medium">{formatDate(activeProtocol.startDate)}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs uppercase text-muted-foreground">Interval</p>
-                              <p className="font-medium">Every {activeProtocol.intervalDays} days</p>
-                            </div>
-                            <div>
-                              <p className="text-xs uppercase text-muted-foreground">Dose</p>
-                              <p className="font-medium">
-                                {formatNumber(activeProtocol.doseMl)} mL · {formatNumber(mgPerInjection ?? Number.NaN)} mg
-                              </p>
-                            </div>
-                          </div>
-                          <Separator />
-                          <p className="text-sm text-muted-foreground">
-                            {activeProtocol.notes || "No protocol notes yet."}
-                          </p>
-                        </>
-                      ) : (
-                        <div className="space-y-3">
-                          <p className="text-sm text-muted-foreground">
-                            No active protocol. Create one to generate your schedule.
-                          </p>
-                          <Button className="gap-2" onClick={handleOpenProtocolDialog}>
-                            <Repeat className="size-4" />
-                            Create protocol
-                          </Button>
-                        </div>
-                      )}
+              <Button
+                variant="outline"
+                className="border-white/20 text-white/70 hover:bg-white/10"
+                onClick={handleOpenProtocolDialog}
+              >
+                <Repeat className="size-4 mr-2" />
+                Protocol Settings
+              </Button>
+            </div>
 
-                      {pastProtocols.length > 0 && (
-                        <>
-                          <Separator />
-                          <div className="space-y-3">
-                            <p className="text-xs uppercase text-muted-foreground">
-                              Protocol history
-                            </p>
-                            <div className="space-y-2">
-                              {pastProtocols.slice(0, 4).map((protocol) => (
-                                <div key={protocol.id} className="text-sm">
-                                  <p className="font-medium">{protocol.name}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {formatDate(protocol.startDate)}
-                                    {protocol.endDate ? ` -> ${formatDate(protocol.endDate)}` : ""}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
+            {/* Full-Screen Calendar Grid */}
+            <div className="flex-1 flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
+              {/* Day Headers */}
+              <div className="grid grid-cols-7 border-b border-white/10 bg-white/5">
+                {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map(day => (
+                  <div key={day} className="py-3 text-center text-xs font-medium text-white/40 tracking-wider">
+                    {day}
+                  </div>
+                ))}
+              </div>
 
-                  <Card className="border-border/60 bg-card/70">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Clock className="size-4 text-cyan-300" />
-                        Recent injections
-                      </CardTitle>
-                      <CardDescription>Most recent logs</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ScrollArea className="h-56 pr-3">
-                        <div className="space-y-3">
-                          {injectionsLoading ? (
-                            <p className="text-sm text-muted-foreground">Loading logs...</p>
-                          ) : injections.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No injections logged yet.</p>
-                          ) : (
-                            injections.slice(0, 6).map((log) => (
-                              <div key={log.id} className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="text-sm font-medium">{formatDate(log.date)}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {protocolLookup.get(log.protocolId)?.name ?? "Protocol"}
-                                    </p>
-                                  </div>
-                                  <Badge variant="outline">{formatNumber(log.doseMg)} mg</Badge>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                  {log.notes || "No notes"}
-                                </p>
-                                <Separator />
-                              </div>
-                            ))
+              {/* Calendar Days */}
+              <div className="flex-1 grid grid-cols-7 auto-rows-fr">
+                {(() => {
+                  const currentDate = selectedDate || new Date();
+                  const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                  const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+                  const startDay = firstDay.getDay();
+                  const daysInMonth = lastDay.getDate();
+                  const cells = [];
+
+                  // Empty cells for days before month starts
+                  for (let i = 0; i < startDay; i++) {
+                    cells.push(<div key={`empty-${i}`} className="border-b border-r border-white/5" />);
+                  }
+
+                  // Day cells
+                  for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                    const isToday = isSameDay(date, new Date());
+                    const isScheduled = scheduledDates.some(d => isSameDay(d, date));
+                    const isLogged = loggedDates.some(d => isSameDay(d, date));
+                    const isSelected = selectedDate && isSameDay(date, selectedDate);
+                    const log = injections.find(l => isSameDay(l.date, date));
+
+                    cells.push(
+                      <button
+                        key={day}
+                        onClick={() => setSelectedDate(date)}
+                        className={`
+                          relative border-b border-r border-white/5 p-2 text-left transition-all hover:bg-white/5
+                          ${isSelected ? 'bg-white/10 ring-2 ring-amber-500/50 ring-inset' : ''}
+                          ${isToday ? 'bg-amber-500/10' : ''}
+                        `}
+                      >
+                        <div className="flex items-start justify-between">
+                          <span className={`
+                            text-lg font-medium
+                            ${isToday ? 'text-amber-400 font-bold' : 'text-white/70'}
+                            ${isLogged ? 'text-emerald-400' : ''}
+                          `}>
+                            {day}
+                          </span>
+                          {isScheduled && !isLogged && (
+                            <span className="size-2 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]" />
+                          )}
+                          {isLogged && (
+                            <CheckCircle2 className="size-4 text-emerald-400" />
                           )}
                         </div>
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="calendar" className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-                  <Card className="border-border/60 bg-card/70">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <CalendarDays className="size-4 text-emerald-300" />
-                        Injection calendar
-                      </CardTitle>
-                      <CardDescription>
-                        Scheduled injections are highlighted. Logged injections are outlined.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        modifiers={{
-                          scheduled: scheduledDates,
-                          archived: archivedDates,
-                          logged: loggedDates,
-                        }}
-                        modifiersClassNames={{
-                          scheduled:
-                            "bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30",
-                          archived:
-                            "bg-muted/40 text-muted-foreground hover:bg-muted/60",
-                          logged:
-                            "ring-1 ring-cyan-400/70 text-cyan-100 hover:bg-cyan-500/20",
-                        }}
-                        className="rounded-xl border border-border/60 bg-background/40"
-                      />
-                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                        <Badge variant="outline" className="border-emerald-400/60 text-emerald-200">
-                          Scheduled
-                        </Badge>
-                        <Badge variant="outline" className="border-cyan-400/60 text-cyan-200">
-                          Logged
-                        </Badge>
-                        <Badge variant="outline" className="border-border/70 text-muted-foreground">
-                          Archived protocol
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-border/60 bg-card/70">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Clock className="size-4 text-cyan-300" />
-                        {selectedDate ? formatDate(selectedDate) : "Day details"}
-                      </CardTitle>
-                      <CardDescription>
-                        Log injections, edit history, or start a new protocol.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          className="gap-2"
-                          size="sm"
-                          onClick={() => handleOpenLogDialog()}
-                          disabled={!activeProtocol}
-                        >
-                          <Plus className="size-4" />
-                          Log injection
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          onClick={handleOpenProtocolDialog}
-                        >
-                          <Repeat className="size-4" />
-                          Start new protocol
-                        </Button>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-3">
-                        <p className="text-xs uppercase text-muted-foreground">Schedule</p>
-                        {selectedDate && scheduledDates.some((date) => isSameDay(date, selectedDate)) ? (
-                          <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm">
-                            <div>
-                              <p className="font-medium">Scheduled injection</p>
-                              <p className="text-xs text-muted-foreground">
-                                {activeProtocol?.name ?? "Active protocol"}
-                              </p>
-                            </div>
-                            <Badge variant="outline">Upcoming</Badge>
-                          </div>
-                        ) : selectedDate && archivedDates.some((date) => isSameDay(date, selectedDate)) ? (
-                          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/40 p-3 text-sm">
-                            <div>
-                              <p className="font-medium">Archived protocol schedule</p>
-                              <p className="text-xs text-muted-foreground">Past protocol</p>
-                            </div>
-                            <Badge variant="outline">History</Badge>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            No scheduled injections for this day.
+                        {(isScheduled || isLogged) && (
+                          <p className="text-xs text-white/40 mt-1">
+                            {formatNumber(mgPerInjection ?? 0)} mg
                           </p>
                         )}
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-3">
-                        <p className="text-xs uppercase text-muted-foreground">Logged injections</p>
-                        {injectionsLoading ? (
-                          <p className="text-sm text-muted-foreground">Loading logs...</p>
-                        ) : logsForSelectedDate.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">
-                            No logged injections for this day.
-                          </p>
-                        ) : (
-                          <div className="space-y-3">
-                            {logsForSelectedDate.map((log) => (
-                              <div
-                                key={log.id}
-                                className="flex items-center justify-between rounded-lg border border-border/60 bg-background/40 p-3"
-                              >
-                                <div>
-                                  <p className="text-sm font-medium">
-                                    {formatNumber(log.doseMl)} mL · {formatNumber(log.doseMg)} mg
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {protocolLookup.get(log.protocolId)?.name ?? "Protocol"}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {log.notes || "No notes"}
-                                  </p>
-                                </div>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => handleOpenLogDialog(log)}
-                                >
-                                  <Pencil className="size-4" />
-                                </Button>
-                              </div>
-                            ))}
+                        {isToday && (
+                          <div className="absolute bottom-2 left-2 flex items-center gap-1">
+                            <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+                            <span className="text-[10px] text-amber-400 font-medium">TODAY</span>
                           </div>
                         )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-            </Tabs>
-          )}
-        </div>
-      </div>
+                      </button>
+                    );
+                  }
+
+                  // Fill remaining cells
+                  const totalCells = cells.length;
+                  const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+                  for (let i = 0; i < remainingCells; i++) {
+                    cells.push(<div key={`end-${i}`} className="border-b border-r border-white/5" />);
+                  }
+
+                  return cells;
+                })()}
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-8 mt-4 pt-4 border-t border-white/10 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="size-2.5 rounded-full bg-amber-500" />
+                <span className="text-sm text-white/50">Scheduled</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="size-4 text-emerald-400" />
+                <span className="text-sm text-white/50">Completed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="size-2.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-sm text-white/50">Today</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
 
       <InjectionDialog
         open={logDialogOpen}

@@ -1,5 +1,11 @@
 # DeepShot - Agent Notes
 
+> ## ⛔ STOP — READ [AGENT_ENFORCEMENT.md](AGENT_ENFORCEMENT.md) FIRST
+> **Before doing ANYTHING, you MUST read and comply with the enforcement protocol.**
+> **Violations will result in session termination. No exceptions.**
+
+---
+
 ## Quick context
 - Summary: A web app to track TRT injections, compute mg per injection and mg per week, and show upcoming injection dates on a calendar with history preserved.
 - Access: User login required; data persists across sessions and devices.
