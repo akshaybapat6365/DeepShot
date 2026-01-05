@@ -24,6 +24,15 @@
 - Default to dark mode by setting `html` class to `dark`.
 - Use shadcn Calendar (react-day-picker) unless advanced features require FullCalendar.
 
+## UI requirements
+- Cycle management dashboard sits beside a live calendar for realtime feedback.
+- Calendar supports multi-cycle layered visualization with clear hierarchy.
+- Day cells show date, dose, and status indicator.
+- Calendar is the primary visual focus: large cells, bold typography, clear contrast.
+- Layout must scale cleanly from phone to desktop without hiding calendar detail.
+- Protocol presets must include ED, EOD, E2D, and E3D.
+- Deletions must be recoverable via trash/restore.
+
 ## Documentation loop (always-on)
 - Every change requires an entry in [changelog.md](changelog.md).
 - Every new or updated task must be reflected in [taskslist.md](taskslist.md).

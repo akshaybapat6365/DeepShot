@@ -51,6 +51,7 @@ export async function logInjection(params: {
     concentrationMgPerMl: params.concentrationMgPerMl,
     doseMg,
     notes: params.notes ?? "",
+    isTrashed: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -79,14 +80,38 @@ export async function updateInjection(params: {
   );
 }
 
+export async function trashInjection(params: {
+  uid: string;
+  injectionId: string;
+}) {
+  await updateDoc(doc(db, `users/${params.uid}/injections`, params.injectionId), {
+    isTrashed: true,
+    trashedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function restoreInjection(params: {
+  uid: string;
+  injectionId: string;
+}) {
+  await updateDoc(doc(db, `users/${params.uid}/injections`, params.injectionId), {
+    isTrashed: false,
+    trashedAt: null,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function createOrRestartProtocol(
   uid: string,
   data: {
     name: string;
     startDate: Date;
+    endDate?: Date | null;
     intervalDays: number;
     doseMl: number;
     concentrationMgPerMl: number;
+    themeKey?: string;
     notes?: string;
   }
 ) {
@@ -101,7 +126,6 @@ export async function createOrRestartProtocol(
   activeSnap.forEach((docSnap) => {
     batch.update(docSnap.ref, {
       isActive: false,
-      endDate: Timestamp.fromDate(data.startDate),
       updatedAt: serverTimestamp(),
     });
   });
@@ -110,11 +134,13 @@ export async function createOrRestartProtocol(
   batch.set(newRef, {
     name: data.name,
     startDate: Timestamp.fromDate(data.startDate),
-    endDate: null,
+    endDate: data.endDate ? Timestamp.fromDate(data.endDate) : null,
     intervalDays: data.intervalDays,
     doseMl: data.doseMl,
     concentrationMgPerMl: data.concentrationMgPerMl,
     isActive: true,
+    themeKey: data.themeKey ?? "ember",
+    isTrashed: false,
     notes: data.notes ?? "",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -142,4 +168,54 @@ export async function createOrRestartProtocol(
 
   await batch.commit();
   return newRef.id;
+}
+
+export async function updateProtocol(
+  uid: string,
+  protocolId: string,
+  data: {
+    name: string;
+    startDate: Date;
+    endDate?: Date | null;
+    intervalDays: number;
+    doseMl: number;
+    concentrationMgPerMl: number;
+    themeKey?: string;
+    notes?: string;
+  }
+) {
+  await updateDoc(doc(db, `users/${uid}/protocols`, protocolId), {
+    name: data.name,
+    startDate: Timestamp.fromDate(data.startDate),
+    endDate: data.endDate ? Timestamp.fromDate(data.endDate) : null,
+    intervalDays: data.intervalDays,
+    doseMl: data.doseMl,
+    concentrationMgPerMl: data.concentrationMgPerMl,
+    themeKey: data.themeKey ?? "ember",
+    notes: data.notes ?? "",
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function trashProtocol(params: {
+  uid: string;
+  protocolId: string;
+}) {
+  await updateDoc(doc(db, `users/${params.uid}/protocols`, params.protocolId), {
+    isTrashed: true,
+    isActive: false,
+    trashedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function restoreProtocol(params: {
+  uid: string;
+  protocolId: string;
+}) {
+  await updateDoc(doc(db, `users/${params.uid}/protocols`, params.protocolId), {
+    isTrashed: false,
+    trashedAt: null,
+    updatedAt: serverTimestamp(),
+  });
 }

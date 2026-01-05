@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -25,42 +25,37 @@
   --input: 214.3 31.8% 91.4%;
   --ring: 221.2 83.2% 53.3%;
   --radius: 1rem;
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-sans: "Space Grotesk", "Segoe UI", sans-serif;
 }
 
 .dark {
-  /* Softer Dark Base (not OLED black) */
-  --background: 210 20% 6%;
-  /* #0a0f14 - softer, easier on eyes */
-  --foreground: 210 20% 95%;
+  --background: 220 18% 8%;
+  --foreground: 220 20% 96%;
 
-  /* Cards with more visibility */
-  --card: 210 15% 10%;
-  --card-foreground: 210 20% 95%;
+  --card: 220 16% 12%;
+  --card-foreground: 220 20% 96%;
 
-  --popover: 210 15% 10%;
-  --popover-foreground: 210 20% 95%;
+  --popover: 220 16% 12%;
+  --popover-foreground: 220 20% 96%;
 
-  /* Cyan Primary */
-  --primary: 180 70% 50%;
-  --primary-foreground: 180 100% 5%;
+  --primary: 24 90% 58%;
+  --primary-foreground: 24 100% 10%;
 
-  /* Emerald Secondary */
-  --secondary: 160 60% 45%;
-  --secondary-foreground: 160 100% 5%;
+  --secondary: 201 88% 60%;
+  --secondary-foreground: 220 20% 10%;
 
-  --muted: 210 15% 15%;
-  --muted-foreground: 210 10% 55%;
+  --muted: 220 12% 16%;
+  --muted-foreground: 220 10% 60%;
 
-  --accent: 180 70% 50%;
-  --accent-foreground: 180 100% 5%;
+  --accent: 24 90% 58%;
+  --accent-foreground: 24 100% 10%;
 
-  --destructive: 0 70% 55%;
+  --destructive: 0 80% 55%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 210 15% 18%;
-  --input: 210 15% 18%;
-  --ring: 180 70% 50%;
+  --border: 220 10% 20%;
+  --input: 220 10% 20%;
+  --ring: 24 90% 58%;
 }
 
 @layer base {
@@ -69,90 +64,47 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-100;
+    @apply bg-background text-foreground font-sans antialiased selection:bg-amber-500/40 selection:text-amber-100;
   }
 }
 
 @layer components {
-
-  /* Bio-Luminescent Glass Panel */
-  .glass-panel {
-    @apply bg-[#141419]/40 backdrop-blur-xl border border-white/[0.08] shadow-2xl;
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    /* Specular Top Highlight */
+  .app-shell {
+    background:
+      radial-gradient(900px circle at 12% -10%, rgba(255, 120, 40, 0.25), transparent 60%),
+      radial-gradient(1100px circle at 80% 10%, rgba(255, 200, 120, 0.14), transparent 55%),
+      radial-gradient(1000px circle at 50% 120%, rgba(80, 150, 255, 0.12), transparent 60%),
+      #07090d;
   }
 
-  /* Liquid Glass Button/Pill */
+  .glass-panel {
+    @apply bg-[#0f131a]/80 backdrop-blur-xl border border-white/10 shadow-2xl;
+    box-shadow:
+      0 20px 55px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+
   .glass-pill {
     @apply relative overflow-hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 transition-all duration-300 hover:bg-white/10 active:scale-95;
     transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   .glass-pill:hover {
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 18px rgba(248, 159, 79, 0.25);
   }
 
   .glass-pill.active {
-    @apply bg-cyan-500/20 border-cyan-400/50 text-cyan-50;
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+    @apply bg-amber-500/20 border-amber-400/60 text-amber-100;
+    box-shadow: 0 0 18px rgba(248, 159, 79, 0.25);
   }
 
-  /* Aurora Background Container - NO PURPLE */
-  .aurora-bg {
-    background: radial-gradient(circle at 15% 50%, rgba(0, 240, 255, 0.05), transparent 40%),
-      radial-gradient(circle at 85% 30%, rgba(0, 212, 255, 0.05), transparent 40%);
-  }
-
-  /* Text Styles */
-  .text-neon {
-    @apply text-cyan-400;
-    filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.5));
-  }
-
-  .text-glow-green {
-    @apply text-[#00FF9D];
-    filter: drop-shadow(0 0 8px rgba(0, 255, 157, 0.4));
-  }
-
-  /* Calendar Specifics - Inverted logic for light-on-dark/glass */
-  .calendar-hero .rdp-day {
-    @apply w-16 h-16 text-lg font-light transition-all duration-300 rounded-2xl;
-  }
-
-  .calendar-hero .rdp-day_selected:not([disabled]) {
-    @apply bg-cyan-500/20 text-cyan-50 border border-cyan-400/50;
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
-  }
-
-  /* Fix calendar icons to match dark theme */
   .invert-calendar-icon::-webkit-calendar-picker-indicator {
     filter: invert(1);
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: pointer;
   }
 
   .invert-calendar-icon::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
-  }
-
-  /* Pulsing Ring for Next Injection */
-  .animate-pulse-ring {
-    animation: pulse-ring 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
-  }
-}
-
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.7);
-  }
-
-  70% {
-    box-shadow: 0 0 0 10px rgba(0, 240, 255, 0);
-  }
-
-  100% {
-    box-shadow: 0 0 0 0 rgba(0, 240, 255, 0);
   }
 }

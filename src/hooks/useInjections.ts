@@ -18,14 +18,20 @@ export type Injection = {
   concentrationMgPerMl: number;
   doseMg: number;
   notes?: string;
+  isTrashed?: boolean;
+  trashedAt?: Date | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
 };
 
-type InjectionDoc = Omit<Injection, "id" | "date" | "createdAt" | "updatedAt"> & {
+type InjectionDoc = Omit<
+  Injection,
+  "id" | "date" | "createdAt" | "updatedAt" | "trashedAt"
+> & {
   date: Timestamp;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
+  trashedAt?: Timestamp;
 };
 
 const toDate = (value?: Timestamp | null) =>
@@ -60,6 +66,7 @@ export function useInjections(uid?: string) {
             date: data.date.toDate(),
             createdAt: toDate(data.createdAt),
             updatedAt: toDate(data.updatedAt),
+            trashedAt: toDate(data.trashedAt),
           } as Injection;
         });
         setInjections(next);

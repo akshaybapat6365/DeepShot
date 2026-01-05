@@ -19,16 +19,23 @@ export type Protocol = {
   concentrationMgPerMl: number;
   doseMl: number;
   isActive: boolean;
+  themeKey?: string;
   notes?: string;
+  isTrashed?: boolean;
+  trashedAt?: Date | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
 };
 
-type ProtocolDoc = Omit<Protocol, "id" | "startDate" | "endDate" | "createdAt" | "updatedAt"> & {
+type ProtocolDoc = Omit<
+  Protocol,
+  "id" | "startDate" | "endDate" | "createdAt" | "updatedAt" | "trashedAt"
+> & {
   startDate: Timestamp;
   endDate?: Timestamp | null;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
+  trashedAt?: Timestamp;
 };
 
 const toDate = (value?: Timestamp | null) =>
@@ -64,6 +71,7 @@ export function useProtocols(uid?: string) {
             endDate: toDate(data.endDate),
             createdAt: toDate(data.createdAt),
             updatedAt: toDate(data.updatedAt),
+            trashedAt: toDate(data.trashedAt),
           } as Protocol;
         });
         setProtocols(next);

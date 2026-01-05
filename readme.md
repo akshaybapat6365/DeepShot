@@ -6,7 +6,7 @@ DeepShot is a web app to track testosterone (TRT) injections, calculate dosage, 
 - React + TypeScript + Vite (SPA)
 - Tailwind CSS + shadcn/ui (dark mode default)
 - Firebase Hosting, Firebase Authentication, Cloud Firestore
-- Calendar: shadcn Calendar (react-day-picker)
+- Calendar: custom month grid with multi-cycle layers
 
 ## Core calculations
 - mg_per_injection = dose_ml * concentration_mg_per_ml
@@ -25,6 +25,9 @@ DeepShot is a web app to track testosterone (TRT) injections, calculate dosage, 
   - concentrationMgPerMl
   - doseMl
   - isActive
+  - themeKey
+  - isTrashed
+  - trashedAt
   - notes
   - createdAt
   - updatedAt
@@ -34,13 +37,20 @@ DeepShot is a web app to track testosterone (TRT) injections, calculate dosage, 
   - doseMl
   - concentrationMgPerMl
   - doseMg (computed and stored)
+  - isTrashed
+  - trashedAt
   - notes
   - createdAt
   - updatedAt
 
 ## UI expectations
-- Dashboard: next injection date + days remaining, mg per injection, mg/week, log injection CTA, active protocol, recent injections.
-- Calendar: scheduled injection days highlighted, logged injections visually distinct, day-details side panel with actions to log/edit and start a new protocol.
+- Cycle management dashboard sits beside a live calendar for realtime feedback.
+- Calendar shows multi-cycle layers with color themes, logged shots, and upcoming schedule.
+- Each day cell shows date, dose (when scheduled or logged), and a status indicator.
+- Calendar is the primary visual focus with large, readable cells and bold contrast.
+- Protocol creation supports ED, EOD, E2D, E3D, custom intervals, and optional end dates.
+- Deletions are soft (trash + restore).
+- Calendar export to high-resolution JPEG (calendar grid only).
 
 ## Local development
 ```bash
@@ -71,6 +81,7 @@ npm run build
 firebase deploy --only firestore:rules
 firebase deploy --only hosting
 ```
+Current hosting URL: https://deepshot.web.app
 
 ## Documentation loop
 - ⛔ **MANDATORY**: [AGENT_ENFORCEMENT.md](AGENT_ENFORCEMENT.md) — Agent compliance protocol
@@ -78,4 +89,3 @@ firebase deploy --only hosting
 - Agent notes: [agent.md](agent.md)
 - Active tasks: [taskslist.md](taskslist.md)
 - Changelog: [changelog.md](changelog.md)
-

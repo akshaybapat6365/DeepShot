@@ -154,7 +154,7 @@ export function InjectionDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="glass-panel border-white/10 sm:max-w-xl p-0 overflow-hidden gap-0">
-        <div className="bg-gradient-to-r from-[#00FF9D]/10 to-transparent p-6 border-b border-white/5">
+        <div className="bg-gradient-to-r from-amber-500/15 to-sky-500/10 p-6 border-b border-white/5">
           <DialogHeader>
             <DialogTitle className="text-xl font-light tracking-wide text-white">
               {isEditMode ? "Edit Log" : "Log Injection"}
@@ -175,7 +175,7 @@ export function InjectionDialog({
               type="date"
               value={dateValue}
               onChange={(event) => setDateValue(event.target.value)}
-              className="bg-white/5 border-white/10 text-white/80 focus-visible:ring-[#00FF9D]/50 rounded-xl invert-calendar-icon"
+              className="bg-white/5 border-white/10 text-white/80 focus-visible:ring-amber-500/50 rounded-xl invert-calendar-icon"
               required
             />
           </div>
@@ -192,7 +192,7 @@ export function InjectionDialog({
                   value={doseMl}
                   onChange={(event) => setDoseMl(event.target.value)}
                   placeholder="0.35"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-[#00FF9D]/50 rounded-xl pr-10"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 rounded-xl pr-10"
                   required
                 />
                 <span className="absolute right-3 top-2.5 text-xs text-white/30">mL</span>
@@ -209,7 +209,7 @@ export function InjectionDialog({
                   value={concentration}
                   onChange={(event) => setConcentration(event.target.value)}
                   placeholder="200"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-[#00FF9D]/50 rounded-xl pr-14"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 rounded-xl pr-14"
                   required
                 />
                 <span className="absolute right-3 top-2.5 text-xs text-white/30">mg/mL</span>
@@ -219,7 +219,7 @@ export function InjectionDialog({
 
           <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 flex justify-between items-center">
             <span className="text-xs text-white/40 uppercase tracking-widest">Total Dosage</span>
-            <span className="text-lg font-light text-[#00FF9D] drop-shadow-[0_0_8px_rgba(0,255,157,0.4)]">
+            <span className="text-lg font-light text-sky-200 drop-shadow-[0_0_8px_rgba(94,198,255,0.35)]">
               {doseMg !== null ? `${doseMg.toFixed(1)} mg` : "--"}
             </span>
           </div>
@@ -231,7 +231,7 @@ export function InjectionDialog({
               placeholder="Post-injection site, feeling, etc."
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-[#00FF9D]/50 rounded-xl resize-none"
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 rounded-xl resize-none"
             />
           </div>
 
@@ -247,7 +247,7 @@ export function InjectionDialog({
             <Button
               type="submit"
               disabled={!canSubmit || isSaving}
-              className="bg-[#00FF9D] text-black hover:bg-[#00CC7D] font-medium shadow-[0_0_20px_rgba(0,255,157,0.3)] border-none rounded-xl"
+              className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-medium border-none rounded-xl"
             >
               {isSaving ? "Saving..." : isEditMode ? "Update Log" : "Log Injection"}
             </Button>

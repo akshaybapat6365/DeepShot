@@ -1,37 +1,46 @@
 # DeepShot - Agent Notes
 
-> ## ⛔ STOP — READ [AGENT_ENFORCEMENT.md](AGENT_ENFORCEMENT.md) FIRST
-> **Before doing ANYTHING, you MUST read and comply with the enforcement protocol.**
-> **Violations will result in session termination. No exceptions.**
+## Mandatory preflight
+- Read `~/Projects/agent-scripts/AGENTS.MD` before anything else (skip if missing).
+- Read `AGENT_ENFORCEMENT.md` before any action.
 
----
+## Summary
+- DeepShot = TRT cycle + injection tracking with a bold, layered calendar.
+- Core outputs: mg per injection, mg per week, next shot, upcoming schedule.
 
-## Quick context
-- Summary: A web app to track TRT injections, compute mg per injection and mg per week, and show upcoming injection dates on a calendar with history preserved.
-- Access: User login required; data persists across sessions and devices.
-- Stack: React + TypeScript + Vite (SPA), Tailwind CSS + shadcn/ui, Firebase Hosting + Auth + Firestore.
-- UI: Dark mode default; calendar-first view uses shadcn Calendar (react-day-picker) with day-details panel.
-- Data: Auth state + Firestore reads/writes wired; log injection and protocol restart dialogs live in the UI.
+## Stack
+- React + TypeScript + Vite (SPA)
+- Tailwind CSS + shadcn/ui, lucide icons, dark mode default
+- Firebase Hosting + Auth + Firestore
 
-## Core inputs
-- concentration_mg_per_ml: number (variable per vial)
-- dose_ml: number
-- protocol_interval_days: number (ED, EOD, E2D, E3D, and custom)
-- start_date: date
-- injection_log_date: date (including today or yesterday)
+## UI intent
+- Bold, aggressive, high-contrast UI with depth and layered hierarchy.
+- Cycle management dashboard + live calendar side-by-side.
+- Calendar shows multi-cycle layers, logged shots, scheduled shots, and today.
+- Each day cell shows date, dose, status, and layered color bars.
+- Calendar is the primary visual focus with large, readable cells.
+- DeepShot icon branding should appear in favicon + key UI surfaces.
 
-## Core outputs
-- mg_per_injection = dose_ml * concentration_mg_per_ml
-- mg_per_week = mg_per_injection * (7 / protocol_interval_days)
-- next_injection_date = most recent injection date + interval
-- upcoming_schedule_dates = generated sequence for the active protocol
+## Cycle rules
+- Multiple cycles visible at once with per-cycle theme colors.
+- Cycle start date can be in the past or present.
+- Cycle end date is user-defined; schedule stops at end date.
+- Restarting creates a new cycle; history remains visible.
+- Soft delete only; trash + restore for protocols and injections.
 
-## Scheduling behavior
-- Generate future injection dates from the selected interval.
-- Allow restarting with a new protocol without deleting history.
-- Keep past protocols and injection logs visible alongside the current schedule.
+## Firestore schema (extended)
+- users/{uid}/protocols/{protocolId}
+  - name, startDate, endDate|null, intervalDays, doseMl, concentrationMgPerMl
+  - isActive, themeKey, isTrashed, trashedAt, notes, createdAt, updatedAt
+- users/{uid}/injections/{injectionId}
+  - protocolId, date, doseMl, concentrationMgPerMl, doseMg
+  - isTrashed, trashedAt, notes, createdAt, updatedAt
+
+## Design system notes
+- Theme accents: amber + sky (multi-theme via `protocolThemes`).
+- Use layered shadows, rounded corners, and bold typography (Space Grotesk).
+- Avoid generic UI grids, weak contrast, or low-visibility calendars.
 
 ## Documentation loop
-- Update [taskslist.md](taskslist.md) for new work, status changes, and blockers.
-- Update [changelog.md](changelog.md) for every material change.
-- Keep [readme.md](readme.md) and [projectrules.md](projectrules.md) aligned with scope or policy changes.
+- Update `changelog.md` for every material change.
+- Keep `taskslist.md`, `readme.md`, `projectrules.md` aligned.
