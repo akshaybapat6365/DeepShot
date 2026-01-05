@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toJpeg } from "html-to-image";
 import { toast } from "sonner";
+import { getRedirectResult } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +39,7 @@ import {
   trashInjection,
   trashProtocol,
 } from "@/lib/firestore";
+import { auth } from "@/lib/firebase";
 import { getProtocolTheme } from "@/lib/protocolThemes";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -71,7 +73,7 @@ const formatMonth = (date: Date) =>
     year: "numeric",
   });
 
-const formatExportDate = (date: Date) => {
+  const formatExportDate = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -143,6 +145,26 @@ const buildMonthGrid = (baseDate: Date) => {
   };
 };
 
+const formatAuthError = (error: unknown) => {
+  if (!error || typeof error !== "object") {
+    return "Sign in failed. Please try again.";
+  }
+  const code =
+    "code" in error && typeof (error as { code?: string }).code === "string"
+      ? (error as { code?: string }).code ?? ""
+      : "";
+  if (code === "auth/unauthorized-domain") {
+    return "Auth blocked for this host. Use https://deepshot.web.app or add this IP to Firebase Auth authorized domains.";
+  }
+  if (code === "auth/popup-blocked") {
+    return "Popup blocked. Retrying with redirect.";
+  }
+  if (code) {
+    return `Sign in failed (${code}).`;
+  }
+  return "Sign in failed. Please try again.";
+};
+
 function App() {
   const { user, loading: authLoading } = useAuth();
   const { protocols, loading: protocolsLoading } = useProtocols(user?.uid);
@@ -170,6 +192,12 @@ function App() {
       toast.error("Could not initialize your profile.");
     });
   }, [user]);
+
+  useEffect(() => {
+    getRedirectResult(auth).catch((error) => {
+      toast.error(formatAuthError(error));
+    });
+  }, []);
 
   const protocolsClean = useMemo(
     () => protocols.filter((protocol) => !protocol.isTrashed),
@@ -379,7 +407,7 @@ function App() {
     try {
       await login();
     } catch (error) {
-      toast.error("Sign in failed. Please try again.");
+      toast.error(formatAuthError(error));
     }
   };
 

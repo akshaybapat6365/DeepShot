@@ -32,3 +32,5 @@
 - Rebalanced the layout to emphasize the calendar with larger day cells, clearer status cues, and a metric strip in the header.
 - Enhanced cycle list visuals with stronger hierarchy, dose details, and active-state styling.
 - Refined the global background and glass surfaces for deeper contrast.
+- Added mobile-safe auth flow with redirect fallback and clearer sign-in error messaging.
+- Forced auth persistence to keep mobile sessions from bouncing back to login.
