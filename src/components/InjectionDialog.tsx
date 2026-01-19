@@ -144,7 +144,7 @@ export function InjectionDialog({
       }
 
       onOpenChange(false);
-    } catch (error) {
+    } catch {
       toast.error("Could not save the injection. Try again.");
     } finally {
       setIsSaving(false);
@@ -156,7 +156,7 @@ export function InjectionDialog({
       <DialogContent className="glass-panel border-white/10 sm:max-w-xl p-0 overflow-hidden gap-0">
         <div className="bg-gradient-to-r from-amber-500/15 to-sky-500/10 p-6 border-b border-white/5">
           <DialogHeader>
-            <DialogTitle className="text-xl font-light tracking-wide text-white">
+            <DialogTitle className="text-xl font-light tracking-wide text-white font-display">
               {isEditMode ? "Edit Log" : "Log Injection"}
             </DialogTitle>
             <DialogDescription className="text-white/40">

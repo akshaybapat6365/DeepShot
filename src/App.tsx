@@ -6,6 +6,7 @@ import {
   Download,
   Eye,
   EyeOff,
+  Layers,
   LogIn,
   LogOut,
   Pencil,
@@ -16,8 +17,8 @@ import {
 } from "lucide-react";
 import { toJpeg } from "html-to-image";
 import { toast } from "sonner";
-import { getRedirectResult } from "firebase/auth";
 
+import { CycleListDialog } from "@/components/CycleListDialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,10 +37,10 @@ import {
   ensureUserDocument,
   restoreInjection,
   restoreProtocol,
+  setActiveProtocol,
   trashInjection,
   trashProtocol,
 } from "@/lib/firestore";
-import { auth } from "@/lib/firebase";
 import { getProtocolTheme } from "@/lib/protocolThemes";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -166,10 +167,11 @@ const formatAuthError = (error: unknown) => {
 };
 
 function App() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, error: authError } = useAuth();
   const { protocols, loading: protocolsLoading } = useProtocols(user?.uid);
   const { injections, loading: injectionsLoading } = useInjections(user?.uid);
 
+  const today = startOfDay(new Date());
   const [viewDate, setViewDate] = useState(() => startOfDay(new Date()));
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const [logDialogOpen, setLogDialogOpen] = useState(false);
@@ -180,7 +182,9 @@ function App() {
   const [editingProtocol, setEditingProtocol] = useState<Protocol | null>(null);
   const [editingInjection, setEditingInjection] = useState<Injection | null>(null);
   const [showTrash, setShowTrash] = useState(false);
-  const [visibleProtocols, setVisibleProtocols] = useState<Record<string, boolean>>(
+  const [focusActive, setFocusActive] = useState(true);
+  const [cycleListOpen, setCycleListOpen] = useState(false);
+  const [hiddenProtocols, setHiddenProtocols] = useState<Record<string, boolean>>(
     {}
   );
   const calendarRef = useRef<HTMLDivElement>(null);
@@ -194,10 +198,9 @@ function App() {
   }, [user]);
 
   useEffect(() => {
-    getRedirectResult(auth).catch((error) => {
-      toast.error(formatAuthError(error));
-    });
-  }, []);
+    if (!authError) return;
+    toast.error(formatAuthError(authError));
+  }, [authError]);
 
   const protocolsClean = useMemo(
     () => protocols.filter((protocol) => !protocol.isTrashed),
@@ -217,24 +220,13 @@ function App() {
     [injections]
   );
 
-  useEffect(() => {
-    setVisibleProtocols((prev) => {
-      const next: Record<string, boolean> = { ...prev };
-      protocolsClean.forEach((protocol) => {
-        if (next[protocol.id] === undefined) {
-          next[protocol.id] = true;
-        }
-      });
-
-      Object.keys(next).forEach((id) => {
-        if (!protocolsClean.some((protocol) => protocol.id === id)) {
-          delete next[id];
-        }
-      });
-
-      return next;
+  const visibleProtocols = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    protocolsClean.forEach((protocol) => {
+      map[protocol.id] = !hiddenProtocols[protocol.id];
     });
-  }, [protocolsClean]);
+    return map;
+  }, [protocolsClean, hiddenProtocols]);
 
   const orderedProtocols = useMemo(() => {
     const active = protocolsClean.filter((protocol) => protocol.isActive);
@@ -260,6 +252,28 @@ function App() {
     () => getProtocolTheme(activeProtocol?.themeKey),
     [activeProtocol]
   );
+  const focusActiveEnabled = focusActive && !!activeProtocol;
+
+  const toggleProtocolVisibility = (protocolId: string) => {
+    setHiddenProtocols((prev) => {
+      const next = { ...prev };
+      if (next[protocolId]) {
+        delete next[protocolId];
+      } else {
+        next[protocolId] = true;
+      }
+      return next;
+    });
+  };
+
+  const monthRange = useMemo(() => {
+    const start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+    const end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+    return {
+      start: startOfDay(start),
+      end: startOfDay(end),
+    };
+  }, [viewDate]);
 
   const protocolDoseMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -366,6 +380,27 @@ function App() {
     return map;
   }, [injectionsClean, protocolLookup, visibleProtocols]);
 
+  const monthStats = useMemo(() => {
+    let scheduledDays = 0;
+    scheduleByDate.forEach((protocolIds, key) => {
+      if (protocolIds.length === 0) return;
+      const date = new Date(Number(key));
+      if (date >= monthRange.start && date <= monthRange.end) {
+        scheduledDays += 1;
+      }
+    });
+
+    let loggedDays = 0;
+    loggedSummary.forEach((_summary, key) => {
+      const date = new Date(Number(key));
+      if (date >= monthRange.start && date <= monthRange.end) {
+        loggedDays += 1;
+      }
+    });
+
+    return { scheduledDays, loggedDays };
+  }, [loggedSummary, monthRange, scheduleByDate]);
+
   const logsByDate = useMemo(() => {
     const map = new Map<number, Injection[]>();
     injectionsClean.forEach((log) => {
@@ -387,12 +422,15 @@ function App() {
   const selectedScheduledProtocols = selectedLayerProtocols.filter(
     (protocolId) => !selectedLogs.some((log) => log.protocolId === protocolId)
   );
+  const isSelectedPast = selectedDate < today;
   const selectedStatus = selectedSummary
     ? selectedSummary.count > 1
       ? `${selectedSummary.count} logs`
       : "Logged"
     : selectedLayerProtocols.length > 0
-      ? "Scheduled"
+      ? isSelectedPast
+        ? "Past"
+        : "Scheduled"
       : "No injection";
 
   const selectedDose = selectedSummary
@@ -414,7 +452,7 @@ function App() {
   const handleLogout = async () => {
     try {
       await logout();
-    } catch (error) {
+    } catch {
       toast.error("Sign out failed. Please try again.");
     }
   };
@@ -441,6 +479,20 @@ function App() {
     setEditingProtocol(protocol);
     setProtocolDialogMode("edit");
     setProtocolDialogOpen(true);
+  };
+
+  const handleOpenCycleList = () => {
+    setCycleListOpen(true);
+  };
+
+  const handleCreateFromCycleList = () => {
+    setCycleListOpen(false);
+    handleOpenNewCycle();
+  };
+
+  const handleEditFromCycleList = (protocol: Protocol) => {
+    setCycleListOpen(false);
+    handleEditCycle(protocol);
   };
 
   const handleSelectDate = (date: Date) => {
@@ -488,7 +540,7 @@ function App() {
       link.href = dataUrl;
       link.click();
       toast.success("Calendar exported.");
-    } catch (error) {
+    } catch {
       toast.error("Export failed. Try again.");
     }
   };
@@ -498,8 +550,18 @@ function App() {
     try {
       await trashProtocol({ uid: user.uid, protocolId: protocol.id });
       toast.success("Cycle moved to trash.");
-    } catch (error) {
+    } catch {
       toast.error("Could not move cycle to trash.");
+    }
+  };
+
+  const handleSetActiveCycle = async (protocol: Protocol) => {
+    if (!user) return;
+    try {
+      await setActiveProtocol({ uid: user.uid, protocolId: protocol.id });
+      toast.success(`"${protocol.name}" is now active.`);
+    } catch {
+      toast.error("Could not set active cycle.");
     }
   };
 
@@ -508,7 +570,7 @@ function App() {
     try {
       await restoreProtocol({ uid: user.uid, protocolId: protocol.id });
       toast.success("Cycle restored.");
-    } catch (error) {
+    } catch {
       toast.error("Could not restore cycle.");
     }
   };
@@ -518,7 +580,7 @@ function App() {
     try {
       await trashInjection({ uid: user.uid, injectionId: injection.id });
       toast.success("Injection moved to trash.");
-    } catch (error) {
+    } catch {
       toast.error("Could not move injection to trash.");
     }
   };
@@ -528,7 +590,7 @@ function App() {
     try {
       await restoreInjection({ uid: user.uid, injectionId: injection.id });
       toast.success("Injection restored.");
-    } catch (error) {
+    } catch {
       toast.error("Could not restore injection.");
     }
   };
@@ -561,40 +623,23 @@ function App() {
                   className="size-9"
                 />
               </div>
-              <div>
-                <p className="text-2xl font-semibold text-white tracking-tight">
+              <div className="leading-none">
+                <p className="text-3xl font-semibold text-white tracking-[0.12em] font-display uppercase">
                   DeepShot
                 </p>
-                <p className="text-[11px] uppercase tracking-[0.4em] text-white/40">
+                <p className="mt-1 text-[10px] uppercase tracking-[0.5em] text-white/35">
                   Cycle Control
                 </p>
               </div>
             </div>
 
-            {user && activeProtocol && (
-              <div className="hidden lg:flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-2">
-                <span className={`size-2.5 rounded-full ${activeTheme.accent}`} />
-                <div>
-                  <p className="text-[10px] uppercase tracking-widest text-white/40">
-                    Active cycle
-                  </p>
-                  <p className="text-sm font-semibold text-white">
-                    {activeProtocol.name}
-                  </p>
-                </div>
-                <div className="h-8 w-px bg-white/10" />
-                <div className={`text-sm font-semibold ${activeTheme.accentText}`}>
-                  E{activeProtocol.intervalDays}D
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
             {user ? (
               <>
                 <Button
-                  className="gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950"
+                  className="gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950"
                   onClick={() => handleOpenLogDialog()}
                   disabled={!activeProtocol}
                 >
@@ -603,7 +648,15 @@ function App() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-white/20 text-white/80 hover:border-amber-500/40 hover:text-white"
+                  className="border-blue-400/40 text-blue-100 hover:border-blue-300/70 hover:text-white"
+                  onClick={handleOpenCycleList}
+                >
+                  <Layers className="size-4 mr-2" />
+                  <span className="hidden sm:inline">Cycles</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-blue-400/30 text-blue-100 hover:border-blue-300/70 hover:text-white"
                   onClick={handleOpenNewCycle}
                 >
                   <Repeat className="size-4 mr-2" />
@@ -614,12 +667,13 @@ function App() {
                   size="icon"
                   className="text-white/50 hover:text-white"
                   onClick={handleLogout}
+                  aria-label="Sign out"
                 >
                   <LogOut className="size-4" />
                 </Button>
               </>
             ) : (
-              <Button className="gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950" onClick={handleLogin}>
+              <Button className="gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950" onClick={handleLogin}>
                 <LogIn className="size-4" />
                 Sign In
               </Button>
@@ -627,59 +681,9 @@ function App() {
           </div>
         </div>
 
-        {user && activeProtocol && (
-          <div className="border-t border-white/10 px-4 py-3 md:px-6">
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              <div className="min-w-[170px] rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
-                  Last shot
-                </p>
-                <p className="text-sm font-semibold text-white">
-                  {activeLastLog ? formatDate(activeLastLog.date) : "--"}
-                </p>
-                <p className="text-xs text-white/40">
-                  {activeLastLog ? `${formatNumber(activeLastLog.doseMg)} mg` : "No logs yet"}
-                </p>
-              </div>
-              <div className="min-w-[170px] rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
-                  Next shot
-                </p>
-                <p className="text-sm font-semibold text-white">
-                  {nextInjectionDate && nextInjectionWithinRange
-                    ? formatDate(nextInjectionDate)
-                    : "--"}
-                </p>
-                <p className="text-xs text-white/40">
-                  {daysRemaining !== null && nextInjectionWithinRange
-                    ? `${daysRemaining} days`
-                    : "Set end date"}
-                </p>
-              </div>
-              <div className="min-w-[170px] rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
-                  Per injection
-                </p>
-                <p className="text-sm font-semibold text-white">
-                  {mgPerInjection ? `${formatNumber(mgPerInjection)} mg` : "--"}
-                </p>
-                <p className="text-xs text-white/40">Volume + concentration</p>
-              </div>
-              <div className="min-w-[170px] rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
-                  Weekly avg
-                </p>
-                <p className="text-sm font-semibold text-white">
-                  {mgPerWeek ? `${formatNumber(mgPerWeek)} mg` : "--"}
-                </p>
-                <p className="text-xs text-white/40">Based on interval</p>
-              </div>
-            </div>
-          </div>
-        )}
       </header>
 
-      <main className="flex-1 min-h-0 flex flex-col">
+      <main className="flex-1 min-h-0 flex flex-col overflow-auto">
         {!user ? (
           <div className="flex-1 flex items-center justify-center p-4">
               <Card className="max-w-md w-full bg-white/5 border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.6)]">
@@ -687,14 +691,14 @@ function App() {
                 <div className="size-20 rounded-2xl border border-white/10 bg-black/60 mx-auto grid place-items-center mb-4 shadow-[0_20px_50px_rgba(255,120,40,0.25)]">
                   <img src="/deepshot-icon.svg" alt="DeepShot" className="size-14" />
                 </div>
-                <CardTitle className="text-2xl text-white">DeepShot</CardTitle>
+                <CardTitle className="text-2xl text-white font-display">DeepShot</CardTitle>
                 <CardDescription className="text-white/50">
                   Own your cycle. Precision dosing, layered schedules, and a calendar
                   built for clarity.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950" onClick={handleLogin}>
+                <Button className="w-full gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950" onClick={handleLogin}>
                   <LogIn className="size-4" />
                   Continue with Google
                 </Button>
@@ -706,13 +710,13 @@ function App() {
             <Card className="max-w-md w-full bg-white/5 border-white/10">
               <CardHeader className="text-center">
                 <div className="size-16 rounded-2xl bg-white/5 mx-auto grid place-items-center mb-4 border border-white/10">
-                  <Repeat className="size-8 text-amber-300" />
+                  <Repeat className="size-8 text-orange-300" />
                 </div>
                 <CardTitle className="text-white">No Active Cycle</CardTitle>
                 <CardDescription>Set your schedule to start tracking.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950" onClick={handleOpenNewCycle}>
+                <Button className="w-full gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950" onClick={handleOpenNewCycle}>
                   <Plus className="size-4" />
                   Create Cycle
                 </Button>
@@ -720,21 +724,111 @@ function App() {
             </Card>
           </div>
         ) : (
-          <div className="flex-1 min-h-0 grid gap-3 p-3 md:p-4 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
+          <div className="flex-1 min-h-0 grid gap-3 p-3 md:p-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
             <section className="order-2 lg:order-1 min-h-0 flex flex-col gap-3">
+              <div className="rounded-3xl border border-white/10 bg-white/[0.04] shadow-[0_24px_60px_rgba(0,0,0,0.55)] p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+                      Active cycle
+                    </p>
+                    <p className="text-2xl font-semibold text-white font-display tracking-[0.08em] uppercase">
+                      {activeProtocol.name}
+                    </p>
+                    <p className="text-xs text-white/50 flex items-center gap-2">
+                      <span className={`size-2 rounded-full ${activeTheme.accent}`} />
+                      E{activeProtocol.intervalDays}D
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-white/15 text-white/70 hover:text-white"
+                    onClick={handleOpenNewCycle}
+                  >
+                    <Repeat className="size-4 mr-2" />
+                    New
+                  </Button>
+                </div>
+
+                <div className="mt-4 grid gap-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+                      Last shot
+                    </p>
+                    <p className="text-base font-semibold text-white">
+                      {activeLastLog ? formatDate(activeLastLog.date) : "--"}
+                    </p>
+                    <p className="text-xs text-white/40">
+                      {activeLastLog ? `${formatNumber(activeLastLog.doseMg)} mg` : "No logs yet"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+                      Next shot
+                    </p>
+                    <p className="text-base font-semibold text-white">
+                      {nextInjectionDate && nextInjectionWithinRange
+                        ? formatDate(nextInjectionDate)
+                        : "--"}
+                    </p>
+                    <p className="text-xs text-white/40">
+                      {daysRemaining !== null && nextInjectionWithinRange
+                        ? `${daysRemaining} days`
+                        : "Set end date"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+                      Per injection
+                    </p>
+                    <p className="text-base font-semibold text-white">
+                      {mgPerInjection ? `${formatNumber(mgPerInjection)} mg` : "--"}
+                    </p>
+                    <p className="text-xs text-white/40">Dose × concentration</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+                      Weekly avg
+                    </p>
+                    <p className="text-base font-semibold text-white">
+                      {mgPerWeek ? `${formatNumber(mgPerWeek)} mg` : "--"}
+                    </p>
+                    <p className="text-xs text-white/40">Based on interval</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="rounded-3xl border border-white/10 bg-white/[0.04] shadow-[0_24px_60px_rgba(0,0,0,0.55)] p-5 min-h-[240px]">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-white/40">Cycles</p>
-                    <p className="text-lg font-semibold text-white">Layer control</p>
+                  <p className="text-lg font-semibold text-white font-display tracking-[0.08em] uppercase">Layer control</p>
                   </div>
-                  <Button
-                    variant="outline"
-                    className="border-white/15 text-white/70 hover:text-white"
-                    onClick={() => setShowTrash((prev) => !prev)}
-                  >
-                    {showTrash ? "Hide trash" : "Show trash"}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`border-white/15 text-white/70 hover:text-white ${focusActiveEnabled ? "bg-white/10 text-white" : ""}`}
+                      onClick={() => setFocusActive((prev) => !prev)}
+                      disabled={!activeProtocol}
+                    >
+                      {focusActiveEnabled ? (
+                        <Eye className="size-4 mr-2" />
+                      ) : (
+                        <EyeOff className="size-4 mr-2" />
+                      )}
+                      {focusActiveEnabled ? "Focus active" : "Show all"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-white/15 text-white/70 hover:text-white"
+                      onClick={() => setShowTrash((prev) => !prev)}
+                    >
+                      {showTrash ? "Hide trash" : "Show trash"}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="mt-4 space-y-3">
@@ -742,30 +836,30 @@ function App() {
                     const theme = getProtocolTheme(protocol.themeKey);
                     const isVisible = visibleProtocols[protocol.id];
                     const isActive = protocol.isActive;
+                    const isDimmed = focusActiveEnabled && !isActive;
                     return (
                       <div
                         key={protocol.id}
-                        className={`relative rounded-2xl border px-4 py-3 pl-5 transition ${
+                        className={`relative rounded-2xl border px-4 py-3 pl-6 transition ${
                           isActive
-                            ? `border-white/20 bg-white/10 ${theme.glow}`
-                            : "border-white/10 bg-black/30"
+                            ? `border-white/30 bg-gradient-to-br from-white/15 to-black/40 ${theme.glow}`
+                            : "border-white/5 bg-black/30"
+                        } ${
+                          isDimmed
+                            ? "opacity-35 hover:opacity-70"
+                            : "opacity-70 hover:opacity-100"
                         }`}
                       >
                         <span
-                          className={`absolute left-2 top-3 bottom-3 w-1 rounded-full ${theme.accent} ${
+                          className={`absolute left-2 top-3 bottom-3 rounded-full ${theme.accent} ${
                             isVisible ? "" : "opacity-30"
-                          }`}
+                          } ${isActive ? "w-1.5" : "w-1"}`}
                         />
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                           <button
                             type="button"
-                            onClick={() =>
-                              setVisibleProtocols((prev) => ({
-                                ...prev,
-                                [protocol.id]: !isVisible,
-                              }))
-                            }
-                            className="flex items-center gap-3 text-left"
+                            onClick={() => toggleProtocolVisibility(protocol.id)}
+                            className="flex min-w-0 items-center gap-3 text-left"
                           >
                             <span
                               className={`size-3 rounded-full ${theme.accent} ${
@@ -773,7 +867,7 @@ function App() {
                               }`}
                             />
                             <div>
-                              <p className="text-sm font-semibold text-white">
+                              <p className="text-sm font-semibold text-white font-display tracking-[0.08em] uppercase">
                                 {protocol.name}
                               </p>
                               <p className="text-xs text-white/40">
@@ -788,7 +882,7 @@ function App() {
                               </p>
                             </div>
                           </button>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end max-w-full">
                             <span className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-widest ${theme.chip}`}>
                               E{protocol.intervalDays}D
                             </span>
@@ -797,16 +891,23 @@ function App() {
                                 Active
                               </span>
                             )}
+                            {!isActive && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-white/15 text-white/70 hover:text-white"
+                                onClick={() => handleSetActiveCycle(protocol)}
+                              >
+                                <CheckCircle2 className="size-4 mr-2" />
+                                Set active
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-white/50 hover:text-white"
-                              onClick={() =>
-                                setVisibleProtocols((prev) => ({
-                                  ...prev,
-                                  [protocol.id]: !isVisible,
-                                }))
-                              }
+                              className="text-white/50 hover:text-white shrink-0"
+                              onClick={() => toggleProtocolVisibility(protocol.id)}
+                              aria-label={isVisible ? "Hide cycle" : "Show cycle"}
                             >
                               {isVisible ? (
                                 <Eye className="size-4" />
@@ -817,16 +918,18 @@ function App() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-white/50 hover:text-white"
+                              className="text-white/50 hover:text-white shrink-0"
                               onClick={() => handleEditCycle(protocol)}
+                              aria-label="Edit cycle"
                             >
                               <Pencil className="size-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-white/50 hover:text-white"
+                              className="text-white/50 hover:text-white shrink-0"
                               onClick={() => handleTrashProtocol(protocol)}
+                              aria-label="Trash cycle"
                             >
                               <Trash2 className="size-4" />
                             </Button>
@@ -880,7 +983,7 @@ function App() {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-white/40">Selected day</p>
-                    <p className="text-xl font-semibold text-white">
+                    <p className="text-xl font-semibold text-white font-display">
                       {formatDate(selectedDate)}
                     </p>
                   </div>
@@ -919,7 +1022,7 @@ function App() {
                                 </p>
                               </div>
                               <span className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-widest ${theme.chip}`}>
-                                Scheduled
+                                {isSelectedPast ? "Past" : "Scheduled"}
                               </span>
                             </div>
                           </div>
@@ -985,7 +1088,7 @@ function App() {
               </div>
             </section>
 
-            <section className="order-1 lg:order-2 min-h-0 flex flex-col rounded-[32px] border border-white/10 bg-[#0f131a]/80 shadow-[0_24px_60px_rgba(0,0,0,0.55)] overflow-hidden">
+            <section className="order-1 lg:order-2 min-h-0 flex flex-col rounded-[32px] border border-white/10 bg-[#0f131a]/80 shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
               <div className="border-b border-white/10 px-4 py-3 md:px-6 bg-gradient-to-r from-white/5 to-transparent">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
@@ -994,10 +1097,11 @@ function App() {
                       size="icon"
                       className="text-white/60 hover:text-white"
                       onClick={() => shiftMonth(-1)}
+                      aria-label="Previous month"
                     >
                       <ChevronLeft className="size-5" />
                     </Button>
-                    <div className="text-3xl font-semibold tracking-tight text-white">
+                    <div className="text-3xl md:text-4xl font-semibold tracking-[0.08em] uppercase text-white font-display">
                       {formatMonth(viewDate)}
                     </div>
                     <Button
@@ -1005,6 +1109,7 @@ function App() {
                       size="icon"
                       className="text-white/60 hover:text-white"
                       onClick={() => shiftMonth(1)}
+                      aria-label="Next month"
                     >
                       <ChevronRight className="size-5" />
                     </Button>
@@ -1026,36 +1131,86 @@ function App() {
                     </Button>
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-white/50">
+                  <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-widest text-white/50">
                     <div className="flex items-center gap-2">
-                      <span className="size-2.5 rounded-full bg-amber-400" />
+                      <span className="text-white/80">{monthStats.scheduledDays}</span>
+                      Scheduled days
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/80">{monthStats.loggedDays}</span>
+                      Logged days
+                    </div>
+                    <div className="hidden sm:block h-4 w-px bg-white/10" />
+                    {activeProtocol && (
+                      <div className="flex items-center gap-2 text-white/70">
+                        <span className={`size-2.5 rounded-full ${activeTheme.accent}`} />
+                        Active cycle
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="size-2.5 rounded-full bg-[#F97316]" />
                       Scheduled
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="size-4 text-sky-300" />
+                      <CheckCircle2 className="size-4 text-cyan-300" />
                       Logged
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="size-2.5 rounded-full border border-amber-300/70" />
+                      <span className="size-2.5 rounded-full bg-white/20" />
+                      Past
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="size-2.5 rounded-full border border-[#F97316]/70" />
                       Today
                     </div>
                   </div>
                 </div>
+                {orderedProtocols.length > 0 && (
+                  <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-2 text-[10px] uppercase tracking-[0.26em] text-white/50">
+                    {orderedProtocols.map((protocol) => {
+                      const theme = getProtocolTheme(protocol.themeKey);
+                      const isActive = activeProtocol?.id === protocol.id;
+                      const isVisible = visibleProtocols[protocol.id];
+                      const isDimmed = focusActiveEnabled && !isActive;
+                      return (
+                        <button
+                          key={protocol.id}
+                          type="button"
+                          onClick={() => {
+                            if (!isActive) {
+                              handleSetActiveCycle(protocol);
+                            }
+                          }}
+                          className={`flex items-center gap-2 rounded-full border px-3 py-1 transition ${
+                            isActive
+                              ? `border-white/30 bg-white/15 text-white ${theme.glow}`
+                              : "border-white/10 bg-black/30 text-white/60 hover:text-white"
+                          } ${isVisible ? "" : "opacity-30"} ${isDimmed ? "opacity-40" : ""}`}
+                        >
+                          <span className={`size-2 rounded-full ${theme.accent}`} />
+                          <span className="truncate max-w-[140px] whitespace-nowrap">
+                            {protocol.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div ref={calendarRef} className="flex-1 flex flex-col">
-                <div className="grid grid-cols-7 border-b border-white/10 bg-white/5">
+                <div className="grid grid-cols-7 border-b border-white/15 bg-white/5">
                   {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                     <div
                       key={day}
-                      className="py-3 text-center text-[12px] font-semibold uppercase tracking-[0.3em] text-white/40"
+                      className="py-3 text-center text-[12px] font-semibold uppercase tracking-[0.32em] text-white/40 font-display"
                     >
                       {day}
                     </div>
                   ))}
                 </div>
 
-                <div className="flex-1 grid grid-cols-7 grid-rows-6 divide-x divide-y divide-white/10">
+                <div className="flex-1 grid grid-cols-7 grid-rows-6 divide-x divide-y divide-white/15">
                   {monthGrid.map(({ date, isCurrentMonth }) => {
                     const key = dateKey(date);
                     const dayLogs = logsByDate.get(key) ?? [];
@@ -1074,13 +1229,14 @@ function App() {
 
                     const hasLogs = dayLogs.length > 0;
                     const isScheduled = scheduledProtocols.length > 0;
+                    const hasActiveLayer = activeProtocol
+                      ? layerIds.includes(activeProtocol.id)
+                      : false;
                     const isToday = isSameDay(date, new Date());
                     const isSelected = isSameDay(date, selectedDate);
-                    const cellTone = hasLogs
-                      ? "bg-white/[0.1]"
-                      : isScheduled
-                        ? "bg-white/[0.06]"
-                        : "";
+                    const isPast = date < today;
+                    const focusInactive = focusActiveEnabled && !hasActiveLayer;
+                    const focusTone = focusInactive && !isSelected ? "opacity-55" : "";
 
                     const primaryProtocolId =
                       activeProtocol &&
@@ -1093,6 +1249,25 @@ function App() {
                         ? protocolLookup.get(primaryProtocolId)?.themeKey
                         : null
                     );
+                    const primaryIsActive =
+                      !!activeProtocol && primaryProtocolId === activeProtocol.id;
+
+                    const cellTone = hasLogs
+                      ? "bg-white/[0.1]"
+                      : isScheduled
+                        ? hasActiveLayer
+                          ? `bg-white/[0.12] ${primaryTheme.accentSoft}`
+                          : focusInactive
+                            ? "bg-white/[0.015]"
+                            : "bg-white/[0.03]"
+                        : "";
+
+                    const orderedLayerIds = primaryProtocolId
+                      ? [
+                          primaryProtocolId,
+                          ...layerIds.filter((id) => id !== primaryProtocolId),
+                        ]
+                      : layerIds;
 
                     const summary = loggedSummary.get(key);
                     const doseLabel = summary
@@ -1108,28 +1283,62 @@ function App() {
                         ? `${layerIds.length} layers`
                         : "Logged"
                       : isScheduled
-                        ? layerIds.length > 1
-                          ? `${layerIds.length} layers`
-                          : "Scheduled"
+                        ? isPast
+                          ? "Past"
+                          : layerIds.length > 1
+                            ? `${layerIds.length} layers`
+                            : "Scheduled"
                         : "";
+
+                    const statusTone = hasLogs
+                      ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-100"
+                      : statusLabel === "Past"
+                        ? "border-white/15 bg-white/10 text-white/60"
+                        : primaryIsActive
+                          ? primaryTheme.chip
+                          : focusInactive
+                            ? "border-white/10 bg-white/5 text-white/35"
+                            : "border-white/10 bg-white/5 text-white/50";
+
+                    const layerNames = orderedLayerIds
+                      .map((id) => protocolLookup.get(id)?.name)
+                      .filter(Boolean)
+                      .join(" • ");
+
+                    const activeCycleLabel =
+                      primaryIsActive && primaryProtocolId
+                        ? protocolLookup.get(primaryProtocolId)?.name
+                        : null;
 
                     return (
                       <button
                         key={key}
                         type="button"
                         onClick={() => handleSelectDate(date)}
-                        className={`group relative flex flex-col justify-between p-3 md:p-4 text-left transition-colors ${
+                        title={layerNames || undefined}
+                        className={`group relative flex flex-col justify-between p-3 md:p-4 text-left transition-colors ${focusTone} ${
                           isCurrentMonth ? "bg-transparent" : "bg-white/[0.02] text-white/30"
                         } ${cellTone} ${
                           isSelected
                             ? `ring-2 ${primaryTheme.ring} ring-inset`
-                            : "hover:bg-white/[0.05]"
-                        } ${isToday ? "shadow-[inset_0_0_0_1px_rgba(251,191,36,0.4)]" : ""}`}
+                            : hasActiveLayer
+                              ? `ring-1 ${primaryTheme.ring} ring-inset hover:bg-white/[0.05]`
+                              : "hover:bg-white/[0.05]"
+                        } ${primaryIsActive ? primaryTheme.glow : ""} ${
+                          isToday ? "shadow-[inset_0_0_0_1px_rgba(251,191,36,0.4)]" : ""
+                        }`}
                       >
+                        {hasActiveLayer && (
+                          <span
+                            className={`absolute left-0 top-0 h-full ${primaryTheme.accent} opacity-80 ${
+                              primaryIsActive ? "w-1.5" : "w-1"
+                            }`}
+                          />
+                        )}
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <span
-                              className={`text-xl md:text-2xl font-semibold leading-tight ${
+                              className={`text-2xl md:text-3xl font-semibold leading-tight font-display tracking-tight ${
                                 isCurrentMonth ? "text-white" : "text-white/40"
                               } ${isToday ? "text-amber-200" : ""}`}
                             >
@@ -1143,7 +1352,7 @@ function App() {
                           </div>
                           {statusLabel && (
                             <span
-                              className={`rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.28em] ${primaryTheme.chip}`}
+                              className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] ${statusTone}`}
                             >
                               {statusLabel}
                             </span>
@@ -1152,24 +1361,45 @@ function App() {
 
                         <div className="space-y-2">
                           {doseLabel && (
-                            <p className="text-sm md:text-base font-semibold tracking-tight text-white/90">
+                            <p
+                              className={`text-base md:text-lg font-semibold tracking-tight ${
+                                primaryIsActive ? "text-white/90" : "text-white/55"
+                              }`}
+                            >
                               {doseLabel}
                             </p>
                           )}
                           {!doseLabel && (hasLogs || isScheduled) && (
                             <p className="text-xs text-white/40">Cycle day</p>
                           )}
+                          {activeCycleLabel && (
+                            <p
+                              className={`text-[10px] uppercase tracking-[0.28em] ${primaryTheme.accentText} max-w-[90%] truncate drop-shadow-[0_0_12px_rgba(249,115,22,0.35)] ${
+                                isSelected ? "opacity-95" : "opacity-70"
+                              }`}
+                            >
+                              {activeCycleLabel}
+                            </p>
+                          )}
 
                           {layerIds.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              {layerIds.slice(0, 4).map((id) => {
+                            <div className="flex items-end gap-1">
+                              {orderedLayerIds.slice(0, 4).map((id) => {
                                 const theme = getProtocolTheme(
                                   protocolLookup.get(id)?.themeKey
                                 );
+                                const isActiveLayer =
+                                  activeProtocol && id === activeProtocol.id;
                                 return (
                                   <span
                                     key={`${key}-${id}`}
-                                    className={`h-2 flex-1 rounded-full ${theme.accent}`}
+                                    className={`flex-1 rounded-full ${theme.accent} ${
+                                      isActiveLayer
+                                        ? "h-3 shadow-[0_0_12px_rgba(249,115,22,0.45)]"
+                                        : focusActiveEnabled
+                                          ? "h-1.5 opacity-25"
+                                          : "h-1.5 opacity-45"
+                                    }`}
                                   />
                                 );
                               })}
@@ -1183,10 +1413,18 @@ function App() {
                         </div>
 
                         {hasLogs && (
-                          <CheckCircle2 className="absolute bottom-3 right-3 size-5 text-sky-300" />
+                          <CheckCircle2 className="absolute bottom-3 right-3 size-5 text-cyan-300" />
                         )}
                         {!hasLogs && isScheduled && (
-                          <span className="absolute bottom-3 right-3 size-3 rounded-full bg-amber-400" />
+                          <span
+                            className={`absolute bottom-3 right-3 size-3 rounded-full ${
+                              primaryIsActive
+                                ? primaryTheme.accent
+                                : focusInactive
+                                  ? "bg-white/20"
+                                  : "bg-white/40"
+                            }`}
+                          />
                         )}
                       </button>
                     );
@@ -1197,6 +1435,19 @@ function App() {
           </div>
         )}
       </main>
+
+      <CycleListDialog
+        open={cycleListOpen}
+        onOpenChange={setCycleListOpen}
+        protocols={orderedProtocols}
+        activeProtocolId={activeProtocol?.id}
+        visibleProtocols={visibleProtocols}
+        onToggleVisibility={toggleProtocolVisibility}
+        onEdit={handleEditFromCycleList}
+        onTrash={handleTrashProtocol}
+        onSetActive={handleSetActiveCycle}
+        onCreate={handleCreateFromCycleList}
+      />
 
       <InjectionDialog
         open={logDialogOpen}

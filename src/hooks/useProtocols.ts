@@ -42,17 +42,18 @@ const toDate = (value?: Timestamp | null) =>
   value ? value.toDate() : null;
 
 export function useProtocols(uid?: string) {
-  const [protocols, setProtocols] = useState<Protocol[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<{
+    protocols: Protocol[];
+    loadedUid: string | null;
+  }>({ protocols: [], loadedUid: null });
+
+  const protocols =
+    uid && state.loadedUid === uid ? state.protocols : [];
+  const loading = uid ? state.loadedUid !== uid : false;
 
   useEffect(() => {
-    if (!uid) {
-      setProtocols([]);
-      setLoading(false);
-      return;
-    }
+    if (!uid) return;
 
-    setLoading(true);
     const q = query(
       collection(db, `users/${uid}/protocols`),
       orderBy("startDate", "desc"),
@@ -74,12 +75,10 @@ export function useProtocols(uid?: string) {
             trashedAt: toDate(data.trashedAt),
           } as Protocol;
         });
-        setProtocols(next);
-        setLoading(false);
+        setState({ protocols: next, loadedUid: uid });
       },
       () => {
-        setProtocols([]);
-        setLoading(false);
+        setState({ protocols: [], loadedUid: uid });
       }
     );
 

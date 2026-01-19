@@ -38,17 +38,18 @@ const toDate = (value?: Timestamp | null) =>
   value ? value.toDate() : null;
 
 export function useInjections(uid?: string) {
-  const [injections, setInjections] = useState<Injection[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<{
+    injections: Injection[];
+    loadedUid: string | null;
+  }>({ injections: [], loadedUid: null });
+
+  const injections =
+    uid && state.loadedUid === uid ? state.injections : [];
+  const loading = uid ? state.loadedUid !== uid : false;
 
   useEffect(() => {
-    if (!uid) {
-      setInjections([]);
-      setLoading(false);
-      return;
-    }
+    if (!uid) return;
 
-    setLoading(true);
     const q = query(
       collection(db, `users/${uid}/injections`),
       orderBy("date", "desc"),
@@ -69,12 +70,10 @@ export function useInjections(uid?: string) {
             trashedAt: toDate(data.trashedAt),
           } as Injection;
         });
-        setInjections(next);
-        setLoading(false);
+        setState({ injections: next, loadedUid: uid });
       },
       () => {
-        setInjections([]);
-        setLoading(false);
+        setState({ injections: [], loadedUid: uid });
       }
     );
 

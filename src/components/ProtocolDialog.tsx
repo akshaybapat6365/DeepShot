@@ -183,7 +183,7 @@ export function ProtocolDialog({
       }
 
       onOpenChange(false);
-    } catch (error) {
+    } catch {
       toast.error("Could not save the cycle. Try again.");
     } finally {
       setIsSaving(false);
@@ -200,7 +200,7 @@ export function ProtocolDialog({
       <DialogContent className="glass-panel border-white/10 sm:max-w-2xl p-0 overflow-hidden gap-0">
         <div className="bg-gradient-to-r from-amber-500/20 to-sky-500/10 p-6 border-b border-white/5">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold tracking-wide text-white">
+            <DialogTitle className="text-2xl font-semibold tracking-wide text-white font-display">
               {mode === "edit" ? "Edit Cycle" : "New Cycle"}
             </DialogTitle>
             <DialogDescription className="text-white/50">

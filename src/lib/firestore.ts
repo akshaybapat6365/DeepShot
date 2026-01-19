@@ -170,6 +170,34 @@ export async function createOrRestartProtocol(
   return newRef.id;
 }
 
+export async function setActiveProtocol(params: {
+  uid: string;
+  protocolId: string;
+}) {
+  const batch = writeBatch(db);
+
+  const activeQ = query(
+    collection(db, `users/${params.uid}/protocols`),
+    where("isActive", "==", true)
+  );
+  const activeSnap = await getDocs(activeQ);
+
+  activeSnap.forEach((docSnap) => {
+    if (docSnap.id === params.protocolId) return;
+    batch.update(docSnap.ref, {
+      isActive: false,
+      updatedAt: serverTimestamp(),
+    });
+  });
+
+  batch.update(doc(db, `users/${params.uid}/protocols`, params.protocolId), {
+    isActive: true,
+    updatedAt: serverTimestamp(),
+  });
+
+  await batch.commit();
+}
+
 export async function updateProtocol(
   uid: string,
   protocolId: string,
