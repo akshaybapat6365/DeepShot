@@ -7,3 +7,5 @@ READ ~/Projects/agent-scripts/AGENTS.MD BEFORE ANYTHING (skip if missing).
 
 ## UX Login Work
 See `docs/ux/login/README.md` (source of truth).
+
+App UX Refresh Work: docs/ux/app/README.md (source of truth).
