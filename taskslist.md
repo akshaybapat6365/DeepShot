@@ -6,14 +6,18 @@
 
 ## Active
 - [ ] QA cycle dashboard + layered calendar on desktop and mobile.
+- [ ] Test new features: onboarding wizard, notifications, data export.
 
 ## Next
-- [ ] Add profile settings (timezone, default protocol) UI.
 - [ ] Add validation for injection edit conflicts (duplicate same-day logs).
+- [ ] Add PWA support (manifest.json, service worker).
+- [ ] Add blood work tracking feature.
 
 ## Backlog
-- [ ] Notifications or reminders for upcoming injections.
-- [ ] Import or export injection history.
+- [ ] Browser push notifications (requires Firebase Cloud Messaging).
+- [ ] Import injection history from CSV.
+- [ ] Multi-compound support (HCG, AI).
+- [ ] Protocol templates library.
 
 ## Done
 - [x] Confirm tech stack choices (React + TS + Vite, Tailwind + shadcn/ui, shadcn Calendar).
@@ -36,3 +40,13 @@
 - [x] Add high-resolution JPEG export for the calendar grid.
 - [x] Redesign calendar-first layout for bolder hierarchy, larger day cells, and denser info.
 - [x] Integrate DeepShot icon branding into favicon and key UI touchpoints.
+- [x] Complete UI/UX improvement phases 1-4 (mobile nav, drawers, skeletons, micro-interactions, insights charts).
+- [x] Phase 1: Calendar cells redesign with larger cells, dose labels, status indicators, weekly view.
+- [x] Phase 2: Insights panel with streak tracking, heatmap, weekly/monthly comparison charts.
+- [x] Phase 3: Settings dialog with timezone selector, user profile display, sign-out.
+- [x] Phase 4: Onboarding wizard for new users, improved empty states.
+- [x] Phase 5: In-app notification center with upcoming, missed, and streak notifications.
+- [x] Phase 6: Data export (JSON and CSV) in Settings dialog.
+- [x] Add profile settings (timezone) UI.
+- [x] Notifications for upcoming injections (in-app).
+- [x] Export injection history (JSON/CSV).

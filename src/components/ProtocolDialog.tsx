@@ -3,19 +3,26 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DrawerClose,
+  DrawerDescription,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import type { Protocol } from "@/hooks/useProtocols";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { createOrRestartProtocol, updateProtocol } from "@/lib/firestore";
+import { triggerCelebration } from "@/lib/celebration";
 import { PROTOCOL_THEMES } from "@/lib/protocolThemes";
+import { Loader2, X } from "lucide-react";
 
 const toInputDate = (date: Date) => {
   const local = new Date(date);
@@ -60,6 +67,9 @@ export function ProtocolDialog({
   initialProtocol,
   defaultStartDate,
 }: ProtocolDialogProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const Title = isMobile ? DrawerTitle : DialogTitle;
+  const Description = isMobile ? DrawerDescription : DialogDescription;
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -180,6 +190,7 @@ export function ProtocolDialog({
           notes: notes.trim() || "",
         });
         toast.success("Cycle saved.");
+        void triggerCelebration();
       }
 
       onOpenChange(false);
@@ -196,16 +207,32 @@ export function ProtocolDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-panel border-white/10 sm:max-w-2xl p-0 overflow-hidden gap-0">
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      contentClassName="glass-panel border-white/10 sm:max-w-2xl p-0 overflow-hidden gap-0"
+    >
         <div className="bg-gradient-to-r from-amber-500/20 to-sky-500/10 p-6 border-b border-white/5">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold tracking-wide text-white font-display">
-              {mode === "edit" ? "Edit Cycle" : "New Cycle"}
-            </DialogTitle>
-            <DialogDescription className="text-white/50">
+            <div className="flex items-start justify-between gap-4">
+              <Title className="text-2xl font-semibold tracking-wide text-white font-display">
+                {mode === "edit" ? "Edit Cycle" : "New Cycle"}
+              </Title>
+              {isMobile && (
+                <DrawerClose asChild>
+                  <button
+                    type="button"
+                    className="rounded-full border border-white/10 p-2 text-white/70 hover:text-white"
+                    aria-label="Close"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </DrawerClose>
+              )}
+            </div>
+            <Description className="text-white/70">
               Define the schedule, theme, and range for this protocol.
-            </DialogDescription>
+            </Description>
           </DialogHeader>
         </div>
 
@@ -233,7 +260,7 @@ export function ProtocolDialog({
                     className={`flex flex-col items-center justify-center rounded-xl border px-2 py-2 text-xs font-semibold uppercase tracking-wider transition ${
                       theme.key === themeKey
                         ? `${theme.border} ${theme.accentSoft} ${theme.glow}`
-                        : "border-white/10 bg-white/5 text-white/50"
+                        : "border-white/10 bg-white/5 text-white/70"
                     }`}
                   >
                     <span className={`mb-2 size-4 rounded-full ${theme.accent}`} />
@@ -350,7 +377,7 @@ export function ProtocolDialog({
           </div>
 
           <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 flex justify-between items-center">
-            <span className="text-xs text-white/40 uppercase tracking-widest">Calculated Dose</span>
+            <span className="text-xs text-white/70 uppercase tracking-widest">Calculated Dose</span>
             <span className="text-lg font-light text-amber-200 drop-shadow-[0_0_8px_rgba(248,159,79,0.3)]">
               {doseMgPreview !== null ? `${doseMgPreview.toFixed(1)} mg` : "--"}
             </span>
@@ -372,7 +399,7 @@ export function ProtocolDialog({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="text-white/40 hover:text-white hover:bg-white/5"
+              className="text-white/70 hover:text-white hover:bg-white/5"
             >
               Cancel
             </Button>
@@ -381,11 +408,19 @@ export function ProtocolDialog({
               disabled={!canSubmit || isSaving}
               className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-medium border-none rounded-xl"
             >
-              {isSaving ? "Saving..." : mode === "edit" ? "Update Cycle" : "Create Cycle"}
+              {isSaving ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Saving...
+                </>
+              ) : mode === "edit" ? (
+                "Update Cycle"
+              ) : (
+                "Create Cycle"
+              )}
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

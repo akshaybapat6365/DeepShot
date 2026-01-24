@@ -37,7 +37,7 @@ type InjectionDoc = Omit<
 const toDate = (value?: Timestamp | null) =>
   value ? value.toDate() : null;
 
-export function useInjections(uid?: string) {
+export function useInjections(uid?: string, refreshKey = 0) {
   const [state, setState] = useState<{
     injections: Injection[];
     loadedUid: string | null;
@@ -78,7 +78,7 @@ export function useInjections(uid?: string) {
     );
 
     return () => unsubscribe();
-  }, [uid]);
+  }, [uid, refreshKey]);
 
   return { injections, loading };
 }

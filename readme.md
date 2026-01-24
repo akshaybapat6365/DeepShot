@@ -7,6 +7,7 @@ DeepShot is a web app to track testosterone (TRT) injections, calculate dosage, 
 - Tailwind CSS + shadcn/ui (dark mode default)
 - Firebase Hosting, Firebase Authentication, Cloud Firestore
 - Calendar: custom month grid with multi-cycle layers
+- Motion + charts: Framer Motion, Recharts, Vaul drawers, canvas-confetti
 
 ## Core calculations
 - mg_per_injection = dose_ml * concentration_mg_per_ml
@@ -51,6 +52,8 @@ DeepShot is a web app to track testosterone (TRT) injections, calculate dosage, 
 - Protocol creation supports ED, EOD, E2D, E3D, custom intervals, and optional end dates.
 - Deletions are soft (trash + restore).
 - Calendar export to high-resolution JPEG (calendar grid only).
+- Insights panel includes dosage trend, adherence ring, heatmap, and weekly/monthly comparisons.
+- Mobile UX uses bottom navigation, bottom sheets, and pull-to-refresh.
 
 ## Local development
 ```bash

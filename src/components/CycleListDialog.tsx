@@ -2,15 +2,21 @@ import { CheckCircle2, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DrawerClose,
+  DrawerDescription,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { type Protocol } from "@/hooks/useProtocols";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { getProtocolTheme } from "@/lib/protocolThemes";
+import { X } from "lucide-react";
 
 type CycleListDialogProps = {
   open: boolean;
@@ -51,17 +57,36 @@ export function CycleListDialog({
   onSetActive,
   onCreate,
 }: CycleListDialogProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const Title = isMobile ? DrawerTitle : DialogTitle;
+  const Description = isMobile ? DrawerDescription : DialogDescription;
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-panel border-white/10 sm:max-w-3xl p-0 overflow-hidden gap-0">
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      contentClassName="glass-panel border-white/10 sm:max-w-3xl p-0 overflow-hidden gap-0"
+    >
         <div className="bg-gradient-to-r from-orange-500/20 to-cyan-500/10 border-b border-white/5 p-6">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold tracking-wide text-white font-display">
-              Cycle Library
-            </DialogTitle>
-            <DialogDescription className="text-white/50">
+            <div className="flex items-start justify-between gap-4">
+              <Title className="text-2xl font-semibold tracking-wide text-white font-display">
+                Cycle Library
+              </Title>
+              {isMobile && (
+                <DrawerClose asChild>
+                  <button
+                    type="button"
+                    className="rounded-full border border-white/10 p-2 text-white/70 hover:text-white"
+                    aria-label="Close"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </DrawerClose>
+              )}
+            </div>
+            <Description className="text-white/70">
               Review, toggle, and manage every protocol layer.
-            </DialogDescription>
+            </Description>
           </DialogHeader>
           <div className="mt-4">
             <Button
@@ -77,7 +102,7 @@ export function CycleListDialog({
         <ScrollArea className="max-h-[65vh]">
           <div className="space-y-3 p-6">
             {protocols.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center text-sm text-white/50">
+              <div className="rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center text-sm text-white/70">
                 No cycles yet. Create one to start tracking.
               </div>
             ) : (
@@ -108,11 +133,11 @@ export function CycleListDialog({
                           <p className="text-sm font-semibold text-white font-display tracking-[0.08em] uppercase">
                             {protocol.name}
                           </p>
-                          <p className="text-xs text-white/40">
+                          <p className="text-xs text-white/70">
                             {formatDate(protocol.startDate)} →{" "}
                             {protocol.endDate ? formatDate(protocol.endDate) : "Open"}
                           </p>
-                          <p className="text-xs text-white/40">
+                          <p className="text-xs text-white/70">
                             {formatNumber(
                               protocol.doseMl * protocol.concentrationMgPerMl
                             )}{" "}
@@ -144,7 +169,7 @@ export function CycleListDialog({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-white/50 hover:text-white shrink-0"
+                          className="text-white/70 hover:text-white shrink-0"
                           onClick={() => onToggleVisibility(protocol.id)}
                           aria-label={isVisible ? "Hide cycle" : "Show cycle"}
                         >
@@ -157,7 +182,7 @@ export function CycleListDialog({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-white/50 hover:text-white shrink-0"
+                          className="text-white/70 hover:text-white shrink-0"
                           onClick={() => onEdit(protocol)}
                           aria-label="Edit cycle"
                         >
@@ -166,7 +191,7 @@ export function CycleListDialog({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-white/50 hover:text-white shrink-0"
+                          className="text-white/70 hover:text-white shrink-0"
                           onClick={() => onTrash(protocol)}
                           aria-label="Trash cycle"
                         >
@@ -180,7 +205,6 @@ export function CycleListDialog({
             )}
           </div>
         </ScrollArea>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

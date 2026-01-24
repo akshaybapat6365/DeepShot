@@ -247,3 +247,89 @@ export async function restoreProtocol(params: {
     updatedAt: serverTimestamp(),
   });
 }
+
+export async function updateUserSettings(params: {
+  uid: string;
+  settings: {
+    timezone?: string;
+    defaultProtocol?: string | null;
+  };
+}) {
+  const userRef = doc(db, "users", params.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (userSnap.exists()) {
+    const currentSettings = userSnap.data()?.settings ?? {};
+    await updateDoc(userRef, {
+      settings: {
+        ...currentSettings,
+        ...params.settings,
+      },
+      updatedAt: serverTimestamp(),
+    });
+  } else {
+    await setDoc(userRef, {
+      settings: params.settings,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  }
+}
+
+export async function addBloodWork(params: {
+  uid: string;
+  date: Date;
+  totalT?: number | null;
+  freeT?: number | null;
+  e2?: number | null;
+  shbg?: number | null;
+  hematocrit?: number | null;
+  psa?: number | null;
+  notes?: string;
+}) {
+  await addDoc(collection(db, `users/${params.uid}/bloodwork`), {
+    date: Timestamp.fromDate(params.date),
+    totalT: params.totalT ?? null,
+    freeT: params.freeT ?? null,
+    e2: params.e2 ?? null,
+    shbg: params.shbg ?? null,
+    hematocrit: params.hematocrit ?? null,
+    psa: params.psa ?? null,
+    notes: params.notes ?? "",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function updateBloodWork(params: {
+  uid: string;
+  bloodWorkId: string;
+  date: Date;
+  totalT?: number | null;
+  freeT?: number | null;
+  e2?: number | null;
+  shbg?: number | null;
+  hematocrit?: number | null;
+  psa?: number | null;
+  notes?: string;
+}) {
+  await updateDoc(doc(db, `users/${params.uid}/bloodwork`, params.bloodWorkId), {
+    date: Timestamp.fromDate(params.date),
+    totalT: params.totalT ?? null,
+    freeT: params.freeT ?? null,
+    e2: params.e2 ?? null,
+    shbg: params.shbg ?? null,
+    hematocrit: params.hematocrit ?? null,
+    psa: params.psa ?? null,
+    notes: params.notes ?? "",
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteBloodWork(params: {
+  uid: string;
+  bloodWorkId: string;
+}) {
+  const { deleteDoc } = await import("firebase/firestore");
+  await deleteDoc(doc(db, `users/${params.uid}/bloodwork`, params.bloodWorkId));
+}

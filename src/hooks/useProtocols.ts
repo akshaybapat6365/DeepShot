@@ -41,7 +41,7 @@ type ProtocolDoc = Omit<
 const toDate = (value?: Timestamp | null) =>
   value ? value.toDate() : null;
 
-export function useProtocols(uid?: string) {
+export function useProtocols(uid?: string, refreshKey = 0) {
   const [state, setState] = useState<{
     protocols: Protocol[];
     loadedUid: string | null;
@@ -83,7 +83,7 @@ export function useProtocols(uid?: string) {
     );
 
     return () => unsubscribe();
-  }, [uid]);
+  }, [uid, refreshKey]);
 
   return { protocols, loading };
 }

@@ -1,62 +1,51 @@
 @import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 24 94% 55%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 24 94% 55%;
-  --radius: 1rem;
-  --font-sans: "Barlow", "Segoe UI", sans-serif;
-  --font-display: "Barlow Condensed", "Barlow", "Segoe UI", sans-serif;
-}
+  /* Midnight Glass Theme - Dark Mode Default */
+  --background: 224 25% 6%;      /* #0b0e13 */
+  --foreground: 210 20% 96%;     /* #f1f4f8 */
 
-.dark {
-  --background: 220 30% 4%;
-  --foreground: 210 20% 94%;
+  --card: 224 20% 10%;           /* Slightly lighter than bg */
+  --card-foreground: 210 20% 96%;
 
-  --card: 220 24% 8%;
-  --card-foreground: 210 18% 94%;
+  --popover: 224 25% 8%;
+  --popover-foreground: 210 20% 96%;
 
-  --popover: 220 24% 7%;
-  --popover-foreground: 210 18% 94%;
+  /* Electric Blue Primary */
+  --primary: 217 91% 60%;        /* #3b82f6 */
+  --primary-foreground: 224 25% 6%;
 
-  --primary: 24 94% 55%;
-  --primary-foreground: 24 100% 10%;
+  --secondary: 224 15% 15%;      /* Surface layer */
+  --secondary-foreground: 210 20% 90%;
 
-  --secondary: 199 88% 55%;
-  --secondary-foreground: 220 20% 10%;
+  --muted: 224 15% 15%;
+  --muted-foreground: 215 15% 70%;  /* Improved contrast: ~5.5:1 */
 
-  --muted: 220 14% 14%;
-  --muted-foreground: 215 12% 60%;
+  --accent: 190 90% 50%;         /* Cyan/Teal accent */
+  --accent-foreground: 224 25% 6%;
 
-  --accent: 159 80% 45%;
-  --accent-foreground: 159 90% 10%;
-
-  --destructive: 0 84% 58%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 220 14% 18%;
-  --input: 220 14% 18%;
-  --ring: 24 94% 55%;
+  --border: 224 20% 20%;         /* Subtle borders */
+  --input: 224 20% 20%;
+  --ring: 217 91% 60%;
+  
+  --radius: 0.75rem;
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Barlow", "Inter", sans-serif; /* Restore Barlow for headings/numbers */
+
+  /* Accessible text opacity tokens */
+  --text-high: 0.95;    /* Primary text - 15:1+ contrast */
+  --text-medium: 0.80;  /* Secondary text - 7:1+ contrast */
+  --text-low: 0.65;     /* Tertiary text - 4.5:1+ contrast (AA) */
+  --text-disabled: 0.45; /* Disabled - 3:1 for large text only */
 }
 
 @layer base {
@@ -65,53 +54,87 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased selection:bg-orange-500/40 selection:text-orange-100;
+    @apply bg-background text-foreground font-sans antialiased text-sm selection:bg-primary/30 selection:text-primary-foreground overflow-hidden;
+    background-image: 
+      radial-gradient(circle at 50% 0%, hsl(217, 91%, 60%, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 0% 50%, hsl(190, 90%, 50%, 0.05) 0%, transparent 30%);
+    background-attachment: fixed;
   }
 }
 
 @layer components {
   .font-display {
     font-family: var(--font-display);
-    letter-spacing: 0.06em;
   }
 
   .app-shell {
-    background:
-      radial-gradient(1100px circle at 8% -15%, rgba(249, 115, 22, 0.26), transparent 58%),
-      radial-gradient(950px circle at 85% 12%, rgba(34, 211, 238, 0.22), transparent 52%),
-      radial-gradient(900px circle at 55% 120%, rgba(16, 185, 129, 0.18), transparent 58%),
-      linear-gradient(180deg, rgba(6, 8, 12, 0.98) 0%, rgba(3, 5, 8, 1) 55%, rgba(2, 2, 4, 1) 100%);
+    background: transparent;
   }
 
   .glass-panel {
-    @apply backdrop-blur-2xl border border-white/10 shadow-2xl;
-    box-shadow:
-      0 30px 70px rgba(0, 0, 0, 0.65),
-      inset 0 1px 0 rgba(255, 255, 255, 0.18);
-    background: linear-gradient(140deg, rgba(14, 19, 27, 0.92), rgba(7, 10, 16, 0.86));
+    @apply backdrop-blur-md border border-white/10 bg-gradient-to-br from-white/[0.05] via-[#0b0e13]/70 to-[#0b0e13]/80 shadow-[0_25px_60px_rgba(0,0,0,0.45)];
+  }
+  
+  .glass-card {
+    @apply backdrop-blur-sm border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] shadow-[0_18px_40px_rgba(0,0,0,0.35)] rounded-xl transition-all duration-300;
+  }
+
+  .calendar-shell {
+    @apply glass-panel rounded-2xl border-white/10 shadow-2xl;
+  }
+
+  .calendar-day {
+    @apply relative rounded-lg border border-white/5 bg-white/[0.02] text-foreground/90 transition-all duration-150 hover:bg-white/[0.06] hover:border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background cursor-pointer min-h-[52px] md:min-h-[72px];
+  }
+
+  .calendar-day.muted {
+    @apply text-muted-foreground/40 bg-transparent hover:bg-white/[0.02];
+  }
+
+  .calendar-day.selected {
+    @apply bg-primary/15 border-primary/50 shadow-[0_0_0_1px_rgba(59,130,246,0.4),0_4px_20px_rgba(59,130,246,0.2)];
+  }
+
+  .calendar-day.today {
+    @apply border-primary/30;
+  }
+
+  .calendar-day.inactive {
+    @apply opacity-50;
+  }
+
+  .calendar-day.has-logs {
+    @apply bg-accent/10 border-accent/20;
+  }
+
+  .calendar-day.is-scheduled {
+    @apply bg-primary/5;
   }
 
   .glass-pill {
-    @apply relative overflow-hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 transition-all duration-300 hover:bg-white/10 active:scale-95;
-    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  }
-
-  .glass-pill:hover {
-    box-shadow: 0 0 18px rgba(248, 159, 79, 0.25);
+    @apply relative overflow-hidden rounded-md border border-border bg-secondary px-3 py-1.5 text-xs transition-all hover:bg-secondary/80 active:scale-[0.98];
   }
 
   .glass-pill.active {
-    @apply bg-amber-500/20 border-amber-400/60 text-amber-100;
-    box-shadow: 0 0 18px rgba(248, 159, 79, 0.25);
+    @apply bg-primary/15 border-primary/40 text-primary;
   }
 
   .invert-calendar-icon::-webkit-calendar-picker-indicator {
     filter: invert(1);
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: pointer;
   }
 
   .invert-calendar-icon::-webkit-calendar-picker-indicator:hover {
-    opacity: 1;
+    opacity: 0.8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
