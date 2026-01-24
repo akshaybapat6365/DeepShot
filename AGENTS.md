@@ -4,3 +4,6 @@ READ ~/Projects/agent-scripts/AGENTS.MD BEFORE ANYTHING (skip if missing).
 - Read `AGENT_ENFORCEMENT.md` before any action or response.
 - Verify running services before reporting success.
 - Use `trash` for deletions.
+
+## UX Login Work
+See `docs/ux/login/README.md` (source of truth).
