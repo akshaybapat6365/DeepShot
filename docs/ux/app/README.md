@@ -1,10 +1,10 @@
 # App UX Refresh
 
 ## Current Phase
-- Step 3C/D/F/G complete: evidence pack + diagnosis captured.
+- Spec complete; awaiting IMPLEMENT approval.
 
 ## Latest Evidence Pack Commit
-- (this commit)
+- Evidence+diagnosis: 66b89dc
 
 ## Next Step
 - Await direction ("IMPLEMENT" when ready to act on priorities).
