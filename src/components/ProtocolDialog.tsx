@@ -212,7 +212,7 @@ export function ProtocolDialog({
       onOpenChange={onOpenChange}
       contentClassName="glass-panel border-white/10 sm:max-w-2xl p-0 overflow-hidden gap-0"
     >
-        <div className="bg-gradient-to-r from-amber-500/20 to-sky-500/10 p-6 border-b border-white/5">
+        <div className="bg-gradient-to-r from-amber-500/20 to-sky-500/10 p-5 border-b border-white/5">
           <DialogHeader>
             <div className="flex items-start justify-between gap-4">
               <Title className="text-2xl font-semibold tracking-wide text-white font-display">
@@ -236,10 +236,10 @@ export function ProtocolDialog({
           </DialogHeader>
         </div>
 
-        <form className="p-6 space-y-6" onSubmit={handleSubmit}>
-          <div className="grid gap-6 sm:grid-cols-2">
+        <form className="p-5 space-y-5" onSubmit={handleSubmit}>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="protocol-name" className="text-white/60 text-xs uppercase tracking-widest pl-1">Cycle Name</Label>
+              <Label htmlFor="protocol-name" className="text-white/60 text-xs md:text-sm uppercase tracking-widest pl-1">Cycle Name</Label>
               <Input
                 id="protocol-name"
                 placeholder="e.g. Cutting Phase"
@@ -250,7 +250,7 @@ export function ProtocolDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="protocol-theme" className="text-white/60 text-xs uppercase tracking-widest pl-1">Cycle Theme</Label>
+              <Label htmlFor="protocol-theme" className="text-white/60 text-xs md:text-sm uppercase tracking-widest pl-1">Cycle Theme</Label>
               <div className="grid grid-cols-5 gap-2">
                 {PROTOCOL_THEMES.map((theme) => (
                   <button
@@ -272,7 +272,7 @@ export function ProtocolDialog({
           </div>
 
           <div className="space-y-3">
-            <Label className="text-white/60 text-xs uppercase tracking-widest pl-1">Interval Presets</Label>
+            <Label className="text-white/60 text-xs md:text-sm uppercase tracking-widest pl-1">Interval Presets</Label>
             <div className="grid grid-cols-4 gap-2">
               {presets.map((preset) => (
                 <button
@@ -295,15 +295,15 @@ export function ProtocolDialog({
                   }`}>
                     {preset.label}
                   </span>
-                  <span className="text-[9px] text-white/30 uppercase tracking-tight">{preset.sub}</span>
+                  <span className="text-xs md:text-sm text-white/30 uppercase tracking-tight">{preset.sub}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="protocol-start" className="text-white/60 text-xs uppercase tracking-widest pl-1">Start Date</Label>
+              <Label htmlFor="protocol-start" className="text-white/60 text-xs md:text-sm uppercase tracking-widest pl-1">Start Date</Label>
               <Input
                 id="protocol-start"
                 type="date"
@@ -314,7 +314,7 @@ export function ProtocolDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="protocol-end" className="text-white/60 text-xs uppercase tracking-widest pl-1">End Date (Optional)</Label>
+              <Label htmlFor="protocol-end" className="text-white/60 text-xs md:text-sm uppercase tracking-widest pl-1">End Date (Optional)</Label>
               <Input
                 id="protocol-end"
                 type="date"
@@ -324,7 +324,7 @@ export function ProtocolDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="protocol-interval" className="text-white/60 text-xs uppercase tracking-widest pl-1">Interval (Days)</Label>
+              <Label htmlFor="protocol-interval" className="text-white/60 text-xs md:text-sm uppercase tracking-widest pl-1">Interval (Days)</Label>
               <Input
                 id="protocol-interval"
                 type="number"
@@ -339,9 +339,9 @@ export function ProtocolDialog({
             </div>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="protocol-dose" className="text-white/60 text-xs uppercase tracking-widest pl-1">Volume (mL)</Label>
+              <Label htmlFor="protocol-dose" className="text-white/60 text-xs md:text-sm uppercase tracking-widest pl-1">Volume (mL)</Label>
               <div className="relative">
                 <Input
                   id="protocol-dose"
@@ -354,11 +354,11 @@ export function ProtocolDialog({
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 rounded-xl pr-10"
                   required
                 />
-                <span className="absolute right-3 top-2.5 text-xs text-white/30">mL</span>
+                <span className="absolute right-3 top-2.5 text-xs md:text-sm text-white/30">mL</span>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="protocol-concentration" className="text-white/60 text-xs uppercase tracking-widest pl-1">Concentration</Label>
+              <Label htmlFor="protocol-concentration" className="text-white/60 text-xs md:text-sm uppercase tracking-widest pl-1">Concentration</Label>
               <div className="relative">
                 <Input
                   id="protocol-concentration"
@@ -371,20 +371,20 @@ export function ProtocolDialog({
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 rounded-xl pr-14"
                   required
                 />
-                <span className="absolute right-3 top-2.5 text-xs text-white/30">mg/mL</span>
+                <span className="absolute right-3 top-2.5 text-xs md:text-sm text-white/30">mg/mL</span>
               </div>
             </div>
           </div>
 
           <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 flex justify-between items-center">
-            <span className="text-xs text-white/70 uppercase tracking-widest">Calculated Dose</span>
+            <span className="text-sm text-white/70 uppercase tracking-widest">Calculated Dose</span>
             <span className="text-lg font-light text-amber-200 drop-shadow-[0_0_8px_rgba(248,159,79,0.3)]">
               {doseMgPreview !== null ? `${doseMgPreview.toFixed(1)} mg` : "--"}
             </span>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="protocol-notes" className="text-white/60 text-xs uppercase tracking-widest pl-1">Notes</Label>
+            <Label htmlFor="protocol-notes" className="text-white/60 text-xs md:text-sm uppercase tracking-widest pl-1">Notes</Label>
             <Textarea
               id="protocol-notes"
               placeholder="Ester type, carrier oil, etc."

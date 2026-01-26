@@ -84,7 +84,7 @@ export function CycleListDialog({
                 </DrawerClose>
               )}
             </div>
-            <Description className="text-white/70">
+            <Description className="text-sm text-white/70">
               Review, toggle, and manage every protocol layer.
             </Description>
           </DialogHeader>
@@ -133,11 +133,11 @@ export function CycleListDialog({
                           <p className="text-sm font-semibold text-white font-display tracking-[0.08em] uppercase">
                             {protocol.name}
                           </p>
-                          <p className="text-xs text-white/70">
+                      <p className="text-xs md:text-sm text-white/70">
                             {formatDate(protocol.startDate)} →{" "}
                             {protocol.endDate ? formatDate(protocol.endDate) : "Open"}
                           </p>
-                          <p className="text-xs text-white/70">
+                      <p className="text-xs md:text-sm text-white/70">
                             {formatNumber(
                               protocol.doseMl * protocol.concentrationMgPerMl
                             )}{" "}
@@ -147,11 +147,11 @@ export function CycleListDialog({
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end max-w-full">
-                        <span className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-widest ${theme.chip}`}>
+                        <span className={`rounded-full border px-2 py-1 text-xs md:text-sm uppercase tracking-widest ${theme.chip}`}>
                           E{protocol.intervalDays}D
                         </span>
                         {isActive && (
-                          <span className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-widest text-white/70">
+                          <span className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-xs md:text-sm uppercase tracking-widest text-white/70">
                             Active
                           </span>
                         )}
@@ -159,7 +159,7 @@ export function CycleListDialog({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="border-white/15 text-white/70 hover:text-white"
+                            className="border-white/15 text-white/70 hover:text-white text-xs md:text-sm"
                             onClick={() => onSetActive(protocol)}
                           >
                             <CheckCircle2 className="size-4 mr-2" />
