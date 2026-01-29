@@ -1,11 +1,12 @@
  import { useMemo } from "react";
- import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
  import { motion } from "framer-motion";
  
  import { Button } from "@/components/ui/button";
  import type { Injection } from "@/hooks/useInjections";
  import type { Protocol } from "@/hooks/useProtocols";
  import { dateKey, isSameDay, startOfDay } from "@/lib/date";
+import { getProtocolTheme } from "@/lib/protocolThemes";
  
  type WeeklyCalendarGridProps = {
    selectedDate: Date;
@@ -15,6 +16,8 @@
    activeProtocol: Protocol | null;
    protocolLookup: Map<string, Protocol>;
    protocolDoseMap: Map<string, number>;
+  orderedProtocols: Protocol[];
+  visibleProtocols: Record<string, boolean>;
    focusActiveEnabled: boolean;
    onSelectDate: (date: Date) => void;
    onPrevWeek: () => void;
@@ -28,7 +31,10 @@
    scheduleByDate,
    logsByDate,
    activeProtocol,
+  protocolLookup,
    protocolDoseMap,
+  orderedProtocols,
+  visibleProtocols,
    focusActiveEnabled,
    onSelectDate,
    onPrevWeek,
@@ -89,8 +95,33 @@
      return `${startMonth} ${start.getDate()} - ${endMonth} ${end.getDate()}, ${year}`;
    };
  
-   return (
-     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+  const legendProtocols = orderedProtocols.filter(
+    (protocol) => visibleProtocols[protocol.id] !== false
+  );
+  const legendVisible = legendProtocols.slice(0, 4);
+  const legendOverflow = Math.max(legendProtocols.length - legendVisible.length, 0);
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      {legendVisible.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 px-3 pt-3">
+          {legendVisible.map((protocol) => {
+            const theme = getProtocolTheme(protocol.themeKey);
+            return (
+              <span
+                key={protocol.id}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] md:text-sm font-medium ${theme.chip}`}
+              >
+                <span className={`size-2 rounded-full ${theme.accent} shadow-[0_0_8px_rgba(255,255,255,0.25)]`} />
+                {protocol.name}
+              </span>
+            );
+          })}
+          {legendOverflow > 0 && (
+            <span className="text-xs md:text-sm text-muted-foreground">+{legendOverflow} more</span>
+          )}
+        </div>
+      )}
        {/* Week Navigation */}
        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
          <Button
@@ -134,6 +165,13 @@
  
            const doseLabel = getDoseLabel(dayLogs, scheduledProtocols);
            const statusLabel = getStatusLabel(hasDayLogs, isScheduled, isPast);
+          const logProtocolIds = new Set(dayLogs.map((log) => log.protocolId));
+          const indicatorProtocols = Array.from(
+            new Set([...scheduledProtocols, ...dayLogs.map((log) => log.protocolId)])
+          );
+          const protocolIndicators = indicatorProtocols
+            .map((id) => protocolLookup.get(id))
+            .filter((protocol): protocol is Protocol => Boolean(protocol));
  
            return (
              <motion.button
@@ -194,12 +232,29 @@
                  </span>
                )}
  
-               {/* Logged indicator */}
-               {hasDayLogs && (
-                 <div className="absolute top-2 right-2 size-4 rounded-full bg-accent flex items-center justify-center shadow-[0_0_8px_rgba(34,211,238,0.5)]">
-                   <Check className="size-2.5 text-accent-foreground" strokeWidth={3} />
-                 </div>
-               )}
+              {protocolIndicators.length > 0 && (
+                <div className="absolute top-2 right-2 flex items-center gap-1">
+                  {protocolIndicators.slice(0, 3).map((protocol) => {
+                    const theme = getProtocolTheme(protocol.themeKey);
+                    const hasLog = logProtocolIds.has(protocol.id);
+                    return (
+                      <span
+                        key={protocol.id}
+                        className={`size-2.5 rounded-full ${theme.accent} ${
+                          hasLog
+                            ? "ring-1 ring-white/70 shadow-[0_0_8px_rgba(255,255,255,0.25)]"
+                            : "opacity-80"
+                        }`}
+                      />
+                    );
+                  })}
+                  {protocolIndicators.length > 3 && (
+                    <span className="text-[9px] text-muted-foreground">
+                      +{protocolIndicators.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
  
                {/* Today badge */}
                {isToday && (

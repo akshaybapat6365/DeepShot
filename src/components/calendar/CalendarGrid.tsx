@@ -1,10 +1,10 @@
 import { useMemo, useRef, type RefObject, type TouchEvent } from "react";
-import { Check } from "lucide-react";
 import { motion } from "framer-motion";
 
 import type { Injection } from "@/hooks/useInjections";
 import type { Protocol } from "@/hooks/useProtocols";
 import { dateKey, isSameDay, startOfDay } from "@/lib/date";
+import { getProtocolTheme } from "@/lib/protocolThemes";
 
 type MonthDay = { date: Date; isCurrentMonth: boolean };
 
@@ -17,6 +17,7 @@ type CalendarGridProps = {
   selectedDate: Date;
   activeProtocol: Protocol | null;
   orderedProtocols: Protocol[];
+  visibleProtocols: Record<string, boolean>;
   protocolLookup: Map<string, Protocol>;
   protocolDoseMap: Map<string, number>;
   focusActiveEnabled: boolean;
@@ -34,6 +35,9 @@ export function CalendarGrid({
   logsByDate,
   selectedDate,
   activeProtocol,
+  orderedProtocols,
+  visibleProtocols,
+  protocolLookup,
   focusActiveEnabled,
   onSelectDate,
   today,
@@ -97,6 +101,12 @@ export function CalendarGrid({
     return null;
   };
 
+  const legendProtocols = orderedProtocols.filter(
+    (protocol) => visibleProtocols[protocol.id] !== false
+  );
+  const legendVisible = legendProtocols.slice(0, 4);
+  const legendOverflow = Math.max(legendProtocols.length - legendVisible.length, 0);
+
   return (
     <div
       ref={calendarRef}
@@ -104,6 +114,28 @@ export function CalendarGrid({
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      {legendVisible.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 px-2 md:px-3 pt-3 pb-1">
+          {legendVisible.map((protocol) => {
+            const theme = getProtocolTheme(protocol.themeKey);
+            return (
+              <span
+                key={protocol.id}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] md:text-sm font-medium ${theme.chip}`}
+              >
+                <span className={`size-2 rounded-full ${theme.accent} shadow-[0_0_8px_rgba(255,255,255,0.25)]`} />
+                {protocol.name}
+              </span>
+            );
+          })}
+          {legendOverflow > 0 && (
+            <span className="text-xs md:text-sm text-muted-foreground">
+              +{legendOverflow} more
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Weekday Headers */}
       <div className="grid grid-cols-7 px-2 md:px-2 pt-2 shrink-0">
         {weekdayLabels.map((day, idx) => (
@@ -136,6 +168,13 @@ export function CalendarGrid({
 
           const doseLabel = getDoseLabel(dayLogs, scheduledProtocols);
           const statusLabel = getStatusLabel(hasDayLogs, isScheduled, isPast);
+          const logProtocolIds = new Set(dayLogs.map((log) => log.protocolId));
+          const indicatorProtocols = Array.from(
+            new Set([...scheduledProtocols, ...dayLogs.map((log) => log.protocolId)])
+          );
+          const protocolIndicators = indicatorProtocols
+            .map((id) => protocolLookup.get(id))
+            .filter((protocol): protocol is Protocol => Boolean(protocol));
 
           const ariaLabel = `${date.toLocaleDateString("en-US", {
             weekday: "long",
@@ -209,25 +248,27 @@ export function CalendarGrid({
                 </div>
               )}
 
-              {/* Bottom: Logged indicator */}
-              {hasDayLogs && isCurrentMonth && (
-                <div className="absolute bottom-1 right-1 md:bottom-1.5 md:right-1.5">
-                  <div className="size-3.5 md:size-4 rounded-full bg-accent flex items-center justify-center shadow-[0_0_8px_rgba(34,211,238,0.5)]">
-                    <Check className="size-2 md:size-2.5 text-accent-foreground" strokeWidth={3} />
-                  </div>
-                </div>
-              )}
-
-              {/* Scheduled dot for non-logged days */}
-              {!hasDayLogs && isScheduled && isCurrentMonth && (
-                <div className="absolute bottom-1 right-1 md:bottom-1.5 md:right-1.5">
-                  <div
-                    className={`size-2 md:size-2.5 rounded-full ${
-                      isMissed
-                        ? "bg-destructive/50"
-                        : "bg-primary shadow-[0_0_6px_rgba(59,130,246,0.5)]"
-                    }`}
-                  />
+              {protocolIndicators.length > 0 && isCurrentMonth && (
+                <div className="absolute bottom-1 left-1 md:bottom-1.5 md:left-1.5 flex items-center gap-1">
+                  {protocolIndicators.slice(0, 4).map((protocol) => {
+                    const theme = getProtocolTheme(protocol.themeKey);
+                    const hasLog = logProtocolIds.has(protocol.id);
+                    return (
+                      <span
+                        key={protocol.id}
+                        className={`size-2.5 md:size-3 rounded-full ${theme.accent} ${
+                          hasLog
+                            ? "ring-1 ring-white/70 shadow-[0_0_8px_rgba(255,255,255,0.25)]"
+                            : "opacity-80"
+                        }`}
+                      />
+                    );
+                  })}
+                  {protocolIndicators.length > 4 && (
+                    <span className="text-[9px] md:text-xs text-muted-foreground">
+                      +{protocolIndicators.length - 4}
+                    </span>
+                  )}
                 </div>
               )}
             </motion.button>

@@ -84,7 +84,7 @@
   }
 
   .calendar-day {
-    @apply relative rounded-lg border border-white/5 bg-white/[0.02] text-foreground/90 transition-all duration-150 hover:bg-white/[0.06] hover:border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background cursor-pointer min-h-[52px] md:min-h-[72px];
+    @apply relative rounded-lg border border-white/5 bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-transparent text-foreground/90 transition-all duration-150 hover:bg-white/[0.08] hover:border-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background cursor-pointer min-h-[52px] md:min-h-[72px] shadow-[0_8px_20px_rgba(0,0,0,0.35)];
   }
 
   .calendar-day.muted {
@@ -104,7 +104,7 @@
   }
 
   .calendar-day.has-logs {
-    @apply bg-accent/10 border-accent/20;
+    @apply bg-accent/10 border-accent/20 shadow-[0_12px_24px_rgba(34,211,238,0.2)];
   }
 
   .calendar-day.is-scheduled {
