@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
   ChevronLeft,
@@ -42,6 +43,13 @@ import {
   trashProtocol,
 } from "@/lib/firestore";
 import { getProtocolTheme } from "@/lib/protocolThemes";
+import { SkipLink } from "@/components/ui/SkipLink";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { MetricCard } from "@/components/metrics/MetricCard";
+import { AdherenceRing } from "@/components/metrics/AdherenceRing";
+import { DosageTrendChart } from "@/components/metrics/DosageTrendChart";
+import { DashboardSkeleton } from "@/components/ui/LoadingSkeleton";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -74,7 +82,7 @@ const formatMonth = (date: Date) =>
     year: "numeric",
   });
 
-  const formatExportDate = (date: Date) => {
+const formatExportDate = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -91,7 +99,7 @@ const formatNumber = (value: number) =>
 const alignToRangeStart = (start: Date, interval: number, rangeStart: Date) => {
   if (rangeStart <= start) return start;
   const diffDays = Math.floor(
-    (startOfDay(rangeStart).getTime() - start.getTime()) / DAY_MS
+    (startOfDay(rangeStart).getTime() - start.getTime()) / DAY_MS,
   );
   const remainder = diffDays % interval;
   const offset = remainder === 0 ? 0 : interval - remainder;
@@ -103,7 +111,7 @@ const generateScheduleInRange = (
   intervalDays: number,
   rangeStart: Date,
   rangeEnd: Date,
-  endLimit?: Date | null
+  endLimit?: Date | null,
 ) => {
   if (intervalDays <= 0) return [];
 
@@ -152,7 +160,7 @@ const formatAuthError = (error: unknown) => {
   }
   const code =
     "code" in error && typeof (error as { code?: string }).code === "string"
-      ? (error as { code?: string }).code ?? ""
+      ? ((error as { code?: string }).code ?? "")
       : "";
   if (code === "auth/unauthorized-domain") {
     return "Auth blocked for this host. Use https://deepshot.web.app or add this IP to Firebase Auth authorized domains.";
@@ -173,20 +181,29 @@ function App() {
 
   const today = startOfDay(new Date());
   const [viewDate, setViewDate] = useState(() => startOfDay(new Date()));
-  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
+  const [selectedDate, setSelectedDate] = useState(() =>
+    startOfDay(new Date()),
+  );
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [protocolDialogOpen, setProtocolDialogOpen] = useState(false);
   const [protocolDialogMode, setProtocolDialogMode] = useState<
     "create" | "edit"
   >("create");
   const [editingProtocol, setEditingProtocol] = useState<Protocol | null>(null);
-  const [editingInjection, setEditingInjection] = useState<Injection | null>(null);
+  const [editingInjection, setEditingInjection] = useState<Injection | null>(
+    null,
+  );
   const [showTrash, setShowTrash] = useState(false);
   const [focusActive, setFocusActive] = useState(true);
   const [cycleListOpen, setCycleListOpen] = useState(false);
-  const [hiddenProtocols, setHiddenProtocols] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [hiddenProtocols, setHiddenProtocols] = useState<
+    Record<string, boolean>
+  >({});
+  const [protocolOpacities, setProtocolOpacities] = useState<
+    Record<string, number>
+  >({});
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [monthDirection, setMonthDirection] = useState(1);
   const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -195,7 +212,15 @@ function App() {
     ensureUserDocument(user).catch(() => {
       toast.error("Could not initialize your profile.");
     });
-  }, [user]);
+
+    // Check if user has seen onboarding
+    const hasSeenOnboarding = localStorage.getItem(
+      "deepshot-onboarding-complete",
+    );
+    if (!hasSeenOnboarding && protocols.length === 0) {
+      setShowOnboarding(true);
+    }
+  }, [user, protocols.length]);
 
   useEffect(() => {
     if (!authError) return;
@@ -204,20 +229,20 @@ function App() {
 
   const protocolsClean = useMemo(
     () => protocols.filter((protocol) => !protocol.isTrashed),
-    [protocols]
+    [protocols],
   );
   const trashedProtocols = useMemo(
     () => protocols.filter((protocol) => protocol.isTrashed),
-    [protocols]
+    [protocols],
   );
 
   const injectionsClean = useMemo(
     () => injections.filter((injection) => !injection.isTrashed),
-    [injections]
+    [injections],
   );
   const trashedInjections = useMemo(
     () => injections.filter((injection) => injection.isTrashed),
-    [injections]
+    [injections],
   );
 
   const visibleProtocols = useMemo(() => {
@@ -227,6 +252,14 @@ function App() {
     });
     return map;
   }, [protocolsClean, hiddenProtocols]);
+
+  const getProtocolOpacity = (protocolId: string) => {
+    return protocolOpacities[protocolId] ?? 1;
+  };
+
+  const handleOpacityChange = (protocolId: string, opacity: number) => {
+    setProtocolOpacities((prev) => ({ ...prev, [protocolId]: opacity }));
+  };
 
   const orderedProtocols = useMemo(() => {
     const active = protocolsClean.filter((protocol) => protocol.isActive);
@@ -246,11 +279,11 @@ function App() {
 
   const activeProtocol = useMemo(
     () => orderedProtocols.find((protocol) => protocol.isActive) ?? null,
-    [orderedProtocols]
+    [orderedProtocols],
   );
   const activeTheme = useMemo(
     () => getProtocolTheme(activeProtocol?.themeKey),
-    [activeProtocol]
+    [activeProtocol],
   );
   const focusActiveEnabled = focusActive && !!activeProtocol;
 
@@ -278,10 +311,7 @@ function App() {
   const protocolDoseMap = useMemo(() => {
     const map = new Map<string, number>();
     protocolsClean.forEach((protocol) => {
-      map.set(
-        protocol.id,
-        protocol.doseMl * protocol.concentrationMgPerMl
-      );
+      map.set(protocol.id, protocol.doseMl * protocol.concentrationMgPerMl);
     });
     return map;
   }, [protocolsClean]);
@@ -319,8 +349,8 @@ function App() {
         Math.ceil(
           (startOfDay(nextInjectionDate).getTime() -
             startOfDay(new Date()).getTime()) /
-            DAY_MS
-        )
+            DAY_MS,
+        ),
       )
     : null;
 
@@ -333,10 +363,11 @@ function App() {
       (7 / activeProtocol.intervalDays)
     : null;
 
-  const { grid: monthGrid, rangeStart, rangeEnd } = useMemo(
-    () => buildMonthGrid(viewDate),
-    [viewDate]
-  );
+  const {
+    grid: monthGrid,
+    rangeStart,
+    rangeEnd,
+  } = useMemo(() => buildMonthGrid(viewDate), [viewDate]);
 
   const scheduleByDate = useMemo(() => {
     const map = new Map<number, string[]>();
@@ -349,7 +380,7 @@ function App() {
         protocol.intervalDays,
         rangeStart,
         rangeEnd,
-        protocol.endDate ?? null
+        protocol.endDate ?? null,
       );
 
       scheduleDates.forEach((date) => {
@@ -420,7 +451,7 @@ function App() {
 
   const selectedLayerProtocols = scheduleByDate.get(selectedKey) ?? [];
   const selectedScheduledProtocols = selectedLayerProtocols.filter(
-    (protocolId) => !selectedLogs.some((log) => log.protocolId === protocolId)
+    (protocolId) => !selectedLogs.some((log) => log.protocolId === protocolId),
   );
   const isSelectedPast = selectedDate < today;
   const selectedStatus = selectedSummary
@@ -436,9 +467,7 @@ function App() {
   const selectedDose = selectedSummary
     ? `${formatNumber(selectedSummary.totalMg)} mg`
     : selectedLayerProtocols.length > 0
-      ? `${formatNumber(
-          protocolDoseMap.get(selectedLayerProtocols[0]) ?? 0
-        )} mg`
+      ? `${formatNumber(protocolDoseMap.get(selectedLayerProtocols[0]) ?? 0)} mg`
       : "--";
 
   const handleLogin = async () => {
@@ -506,7 +535,12 @@ function App() {
   };
 
   const shiftMonth = (offset: number) => {
-    const next = new Date(viewDate.getFullYear(), viewDate.getMonth() + offset, 1);
+    setMonthDirection(offset > 0 ? 1 : -1);
+    const next = new Date(
+      viewDate.getFullYear(),
+      viewDate.getMonth() + offset,
+      1,
+    );
     setViewDate(startOfDay(next));
     setSelectedDate(startOfDay(next));
   };
@@ -595,23 +629,27 @@ function App() {
     }
   };
 
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    localStorage.setItem("deepshot-onboarding-complete", "true");
+  };
+
   if (authLoading || protocolsLoading || injectionsLoading) {
     return (
-      <div className="min-h-screen app-shell text-foreground">
-        <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-6">
-          <Card className="w-full max-w-md border-white/10 bg-white/5">
-            <CardHeader>
-              <CardTitle>Loading your session</CardTitle>
-              <CardDescription>Hang tight while we connect to Firebase.</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
+      <div className="min-h-screen app-shell text-foreground flex items-center justify-center">
+        <DashboardSkeleton />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen app-shell text-foreground flex flex-col">
+      <SkipLink />
+
+      {showOnboarding && (
+        <OnboardingFlow onComplete={handleOnboardingComplete} />
+      )}
+
       <header className="shrink-0 border-b border-white/10 bg-[#07090d]/95 backdrop-blur-md sticky top-0 z-20 shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-4">
@@ -627,45 +665,59 @@ function App() {
                 <p className="text-3xl font-semibold text-white tracking-[0.12em] font-display uppercase">
                   DeepShot
                 </p>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.5em] text-white/35">
+                <p className="mt-1 text-[10px] uppercase tracking-[0.5em] text-white/70">
                   Cycle Control
                 </p>
               </div>
             </div>
-
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             {user ? (
               <>
-                <Button
-                  className="gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950"
-                  onClick={() => handleOpenLogDialog()}
-                  disabled={!activeProtocol}
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <Plus className="size-4" />
-                  <span className="hidden sm:inline">Log injection</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-blue-400/40 text-blue-100 hover:border-blue-300/70 hover:text-white"
-                  onClick={handleOpenCycleList}
+                  <Button
+                    className="gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950"
+                    onClick={() => handleOpenLogDialog()}
+                    disabled={!activeProtocol}
+                  >
+                    <Plus className="size-4" />
+                    <span>Log injection</span>
+                  </Button>
+                </motion.div>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <Layers className="size-4 mr-2" />
-                  <span className="hidden sm:inline">Cycles</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-blue-400/30 text-blue-100 hover:border-blue-300/70 hover:text-white"
-                  onClick={handleOpenNewCycle}
+                  <Button
+                    variant="outline"
+                    className="border-blue-400/40 text-blue-100 hover:border-blue-300/70 hover:text-white"
+                    onClick={handleOpenCycleList}
+                  >
+                    <Layers className="size-4 mr-2" />
+                    <span>Cycles</span>
+                  </Button>
+                </motion.div>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <Repeat className="size-4 mr-2" />
-                  New cycle
-                </Button>
+                  <Button
+                    variant="outline"
+                    className="border-blue-400/30 text-blue-100 hover:border-blue-300/70 hover:text-white"
+                    onClick={handleOpenNewCycle}
+                  >
+                    <Repeat className="size-4 mr-2" />
+                    New cycle
+                  </Button>
+                </motion.div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-white/50 hover:text-white"
+                  className="text-white/70 hover:text-white"
                   onClick={handleLogout}
                   aria-label="Sign out"
                 >
@@ -673,37 +725,239 @@ function App() {
                 </Button>
               </>
             ) : (
-              <Button className="gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950" onClick={handleLogin}>
-                <LogIn className="size-4" />
-                Sign In
-              </Button>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Button
+                  className="gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950"
+                  onClick={handleLogin}
+                >
+                  <LogIn className="size-4" />
+                  Sign In
+                </Button>
+              </motion.div>
             )}
           </div>
         </div>
-
       </header>
 
-      <main className="flex-1 min-h-0 flex flex-col overflow-auto">
+      <main
+        id="main-content"
+        className="flex-1 min-h-0 flex flex-col pb-20 md:pb-0"
+      >
         {!user ? (
-          <div className="flex-1 flex items-center justify-center p-4">
-              <Card className="max-w-md w-full bg-white/5 border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.6)]">
-                <CardHeader className="text-center">
-                <div className="size-20 rounded-2xl border border-white/10 bg-black/60 mx-auto grid place-items-center mb-4 shadow-[0_20px_50px_rgba(255,120,40,0.25)]">
-                  <img src="/deepshot-icon.svg" alt="DeepShot" className="size-14" />
+          <div className="flex-1 relative overflow-hidden">
+            {/* Animated background elements */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute -top-1/2 -left-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-amber-500/20 to-orange-600/10 blur-3xl animate-pulse" />
+              <div
+                className="absolute -bottom-1/2 -right-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-violet-500/15 to-purple-600/10 blur-3xl animate-pulse"
+                style={{ animationDelay: "1s" }}
+              />
+            </div>
+
+            {/* Main content */}
+            <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-center min-h-full p-6 lg:p-12 gap-12">
+              {/* Left side - Hero text */}
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="flex-1 max-w-2xl text-center lg:text-left"
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.6 }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6"
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="text-sm text-white/70">
+                    Now with enhanced tracking
+                  </span>
+                </motion.div>
+
+                <motion.h1
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.6 }}
+                  className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight"
+                >
+                  <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-orange-500 bg-clip-text text-transparent">
+                    DeepShot
+                  </span>
+                  <br />
+                  <span className="text-3xl lg:text-5xl font-light text-white/80">
+                    Cycle Intelligence
+                  </span>
+                </motion.h1>
+
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.6 }}
+                  className="text-lg lg:text-xl text-white/60 mb-8 max-w-xl leading-relaxed"
+                >
+                  Precision dosing, layered schedules, and intelligent tracking.
+                  Take complete control of your protocol with stunning clarity.
+                </motion.p>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.6 }}
+                  className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleLogin}
+                    className="group relative px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl font-semibold text-black text-lg overflow-hidden shadow-[0_0_40px_rgba(245,158,11,0.4)]"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <span className="relative flex items-center justify-center gap-3">
+                      <LogIn className="size-5" />
+                      Get Started
+                    </span>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-8 py-4 rounded-xl font-semibold text-white border border-white/20 hover:bg-white/5 transition-colors text-lg"
+                  >
+                    Learn More
+                  </motion.button>
+                </motion.div>
+              </motion.div>
+
+              {/* Right side - Visual showcase */}
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
+                className="flex-1 max-w-lg w-full"
+              >
+                <div className="relative">
+                  {/* Main card */}
+                  <div className="relative rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-8 backdrop-blur-xl shadow-2xl">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+                          <img
+                            src="/deepshot-icon.svg"
+                            alt=""
+                            className="w-8 h-8"
+                          />
+                        </div>
+                        <div>
+                          <h3 className="text-white font-semibold text-lg">
+                            Active Cycle
+                          </h3>
+                          <p className="text-white/50 text-sm">
+                            Testosterone E3D
+                          </p>
+                        </div>
+                      </div>
+                      <div className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-medium">
+                        Active
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="rounded-2xl bg-black/40 border border-white/5 p-4">
+                        <p className="text-white/40 text-xs uppercase tracking-wider mb-1">
+                          Next Shot
+                        </p>
+                        <p className="text-white text-2xl font-bold">2 days</p>
+                        <p className="text-amber-400 text-sm">250 mg</p>
+                      </div>
+                      <div className="rounded-2xl bg-black/40 border border-white/5 p-4">
+                        <p className="text-white/40 text-xs uppercase tracking-wider mb-1">
+                          Adherence
+                        </p>
+                        <p className="text-white text-2xl font-bold">94%</p>
+                        <p className="text-emerald-400 text-sm">On track</p>
+                      </div>
+                    </div>
+
+                    {/* Calendar preview */}
+                    <div className="rounded-2xl bg-black/40 border border-white/5 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-white/60 text-sm font-medium">
+                          January 2026
+                        </p>
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 rounded-full bg-amber-500" />
+                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
+                          <div
+                            key={i}
+                            className="text-center text-white/30 text-xs py-1"
+                          >
+                            {day}
+                          </div>
+                        ))}
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map(
+                          (date) => (
+                            <div
+                              key={date}
+                              className={`text-center text-xs py-1.5 rounded-lg ${
+                                [5, 8, 11, 14, 17, 20, 23, 26, 29].includes(
+                                  date,
+                                )
+                                  ? "bg-amber-500/30 text-amber-200"
+                                  : date === 30
+                                    ? "bg-emerald-500/30 text-emerald-200"
+                                    : "text-white/50"
+                              }`}
+                            >
+                              {date}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Floating elements */}
+                  <motion.div
+                    animate={{ y: [0, -10, 0] }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="absolute -top-6 -right-6 w-24 h-24 rounded-2xl bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-white/10 backdrop-blur-xl flex items-center justify-center"
+                  >
+                    <div className="text-center">
+                      <p className="text-white text-xl font-bold">12</p>
+                      <p className="text-white/50 text-xs">Protocols</p>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    animate={{ y: [0, 10, 0] }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.5,
+                    }}
+                    className="absolute -bottom-4 -left-4 w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-teal-600/20 border border-white/10 backdrop-blur-xl flex items-center justify-center"
+                  >
+                    <div className="text-center">
+                      <p className="text-white text-lg font-bold">48</p>
+                      <p className="text-white/50 text-[10px]">Logged</p>
+                    </div>
+                  </motion.div>
                 </div>
-                <CardTitle className="text-2xl text-white font-display">DeepShot</CardTitle>
-                <CardDescription className="text-white/50">
-                  Own your cycle. Precision dosing, layered schedules, and a calendar
-                  built for clarity.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950" onClick={handleLogin}>
-                  <LogIn className="size-4" />
-                  Continue with Google
-                </Button>
-              </CardContent>
-            </Card>
+              </motion.div>
+            </div>
           </div>
         ) : !activeProtocol ? (
           <div className="flex-1 flex items-center justify-center p-4">
@@ -713,30 +967,47 @@ function App() {
                   <Repeat className="size-8 text-orange-300" />
                 </div>
                 <CardTitle className="text-white">No Active Cycle</CardTitle>
-                <CardDescription>Set your schedule to start tracking.</CardDescription>
+                <CardDescription className="text-white/70">
+                  Set your schedule to start tracking.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950" onClick={handleOpenNewCycle}>
-                  <Plus className="size-4" />
-                  Create Cycle
-                </Button>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Button
+                    className="w-full gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950"
+                    onClick={handleOpenNewCycle}
+                  >
+                    <Plus className="size-4" />
+                    Create Cycle
+                  </Button>
+                </motion.div>
               </CardContent>
             </Card>
           </div>
         ) : (
-          <div className="flex-1 min-h-0 grid gap-3 p-3 md:p-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
+          <div className="flex-1 min-h-0 grid gap-4 p-3 md:p-4 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)]">
             <section className="order-2 lg:order-1 min-h-0 flex flex-col gap-3">
-              <div className="rounded-3xl border border-white/10 bg-white/[0.04] shadow-[0_24px_60px_rgba(0,0,0,0.55)] p-5">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="rounded-2xl border border-white/8 bg-gradient-to-br from-white/[0.06] to-white/[0.02] shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-4"
+              >
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/70">
                       Active cycle
                     </p>
                     <p className="text-2xl font-semibold text-white font-display tracking-[0.08em] uppercase">
                       {activeProtocol.name}
                     </p>
-                    <p className="text-xs text-white/50 flex items-center gap-2">
-                      <span className={`size-2 rounded-full ${activeTheme.accent}`} />
+                    <p className="text-xs text-white/70 flex items-center gap-2">
+                      <span
+                        className={`size-2 rounded-full ${activeTheme.accent}`}
+                      />
                       E{activeProtocol.intervalDays}D
                     </p>
                   </div>
@@ -751,59 +1022,81 @@ function App() {
                   </Button>
                 </div>
 
-                <div className="mt-4 grid gap-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
-                      Last shot
-                    </p>
-                    <p className="text-base font-semibold text-white">
-                      {activeLastLog ? formatDate(activeLastLog.date) : "--"}
-                    </p>
-                    <p className="text-xs text-white/40">
-                      {activeLastLog ? `${formatNumber(activeLastLog.doseMg)} mg` : "No logs yet"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
-                      Next shot
-                    </p>
-                    <p className="text-base font-semibold text-white">
-                      {nextInjectionDate && nextInjectionWithinRange
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <MetricCard
+                    label="Last shot"
+                    value={
+                      activeLastLog ? formatDate(activeLastLog.date) : "--"
+                    }
+                    subtext={
+                      activeLastLog
+                        ? `${formatNumber(activeLastLog.doseMg)} mg`
+                        : "No logs yet"
+                    }
+                    delay={0.2}
+                  />
+                  <MetricCard
+                    label="Next shot"
+                    value={
+                      nextInjectionDate && nextInjectionWithinRange
                         ? formatDate(nextInjectionDate)
-                        : "--"}
-                    </p>
-                    <p className="text-xs text-white/40">
-                      {daysRemaining !== null && nextInjectionWithinRange
+                        : "--"
+                    }
+                    subtext={
+                      daysRemaining !== null && nextInjectionWithinRange
                         ? `${daysRemaining} days`
-                        : "Set end date"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
-                      Per injection
-                    </p>
-                    <p className="text-base font-semibold text-white">
-                      {mgPerInjection ? `${formatNumber(mgPerInjection)} mg` : "--"}
-                    </p>
-                    <p className="text-xs text-white/40">Dose × concentration</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
-                      Weekly avg
-                    </p>
-                    <p className="text-base font-semibold text-white">
-                      {mgPerWeek ? `${formatNumber(mgPerWeek)} mg` : "--"}
-                    </p>
-                    <p className="text-xs text-white/40">Based on interval</p>
-                  </div>
+                        : "Set end date"
+                    }
+                    delay={0.3}
+                  />
+                  <MetricCard
+                    label="Per injection"
+                    value={
+                      mgPerInjection
+                        ? `${formatNumber(mgPerInjection)} mg`
+                        : "--"
+                    }
+                    subtext="Dose × concentration"
+                    delay={0.4}
+                  />
+                  <MetricCard
+                    label="Weekly avg"
+                    value={mgPerWeek ? `${formatNumber(mgPerWeek)} mg` : "--"}
+                    subtext="Based on interval"
+                    delay={0.5}
+                  />
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="rounded-3xl border border-white/10 bg-white/[0.04] shadow-[0_24px_60px_rgba(0,0,0,0.55)] p-5 min-h-[240px]">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="rounded-2xl border border-white/8 bg-gradient-to-br from-white/[0.06] to-white/[0.02] shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-4"
+              >
+                <div className="flex items-center justify-center mb-3">
+                  <AdherenceRing
+                    scheduled={monthStats.scheduledDays}
+                    logged={monthStats.loggedDays}
+                  />
+                </div>
+                <DosageTrendChart injections={injectionsClean} days={14} />
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="rounded-2xl border border-white/8 bg-gradient-to-br from-white/[0.06] to-white/[0.02] shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-4 min-h-[200px]"
+              >
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-white/40">Cycles</p>
-                  <p className="text-lg font-semibold text-white font-display tracking-[0.08em] uppercase">Layer control</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/70">
+                      Cycles
+                    </p>
+                    <p className="text-lg font-semibold text-white font-display tracking-[0.08em] uppercase">
+                      Layer control
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -838,56 +1131,57 @@ function App() {
                     const isActive = protocol.isActive;
                     const isDimmed = focusActiveEnabled && !isActive;
                     return (
-                      <div
+                      <motion.div
                         key={protocol.id}
-                        className={`relative rounded-2xl border px-4 py-3 pl-6 transition ${
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className={`relative rounded-xl border px-3 py-2.5 pl-5 transition-all duration-200 ${
                           isActive
-                            ? `border-white/30 bg-gradient-to-br from-white/15 to-black/40 ${theme.glow}`
-                            : "border-white/5 bg-black/30"
-                        } ${
-                          isDimmed
-                            ? "opacity-35 hover:opacity-70"
-                            : "opacity-70 hover:opacity-100"
-                        }`}
+                            ? `border-white/25 bg-gradient-to-br from-white/[0.12] to-black/60 ${theme.glow}`
+                            : "border-white/[0.06] bg-gradient-to-br from-white/[0.04] to-black/40"
+                        } ${isDimmed ? "opacity-40 hover:opacity-80" : "opacity-80 hover:opacity-100"}`}
                       >
                         <span
-                          className={`absolute left-2 top-3 bottom-3 rounded-full ${theme.accent} ${
-                            isVisible ? "" : "opacity-30"
-                          } ${isActive ? "w-1.5" : "w-1"}`}
+                          className={`absolute left-2 top-3 bottom-3 rounded-full ${theme.accent} ${isVisible ? "" : "opacity-30"} ${isActive ? "w-1.5" : "w-1"}`}
                         />
-                        <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                        <div className="flex flex-col gap-3">
                           <button
                             type="button"
-                            onClick={() => toggleProtocolVisibility(protocol.id)}
+                            onClick={() =>
+                              toggleProtocolVisibility(protocol.id)
+                            }
                             className="flex min-w-0 items-center gap-3 text-left"
                           >
                             <span
-                              className={`size-3 rounded-full ${theme.accent} ${
-                                isVisible ? "" : "opacity-30"
-                              }`}
+                              className={`size-3 rounded-full shrink-0 ${theme.accent} ${isVisible ? "" : "opacity-30"}`}
                             />
-                            <div>
-                              <p className="text-sm font-semibold text-white font-display tracking-[0.08em] uppercase">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-white font-display tracking-[0.08em] uppercase truncate">
                                 {protocol.name}
                               </p>
-                              <p className="text-xs text-white/40">
+                              <p className="text-xs text-white/70 truncate">
                                 {formatDate(protocol.startDate)} →{" "}
-                                {protocol.endDate ? formatDate(protocol.endDate) : "Open"}
+                                {protocol.endDate
+                                  ? formatDate(protocol.endDate)
+                                  : "Open"}
                               </p>
-                              <p className="text-xs text-white/40">
+                              <p className="text-xs text-white/70">
                                 {formatNumber(
-                                  protocol.doseMl * protocol.concentrationMgPerMl
+                                  protocol.doseMl *
+                                    protocol.concentrationMgPerMl,
                                 )}{" "}
                                 mg · {protocol.doseMl} mL
                               </p>
                             </div>
                           </button>
-                          <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end max-w-full">
-                            <span className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-widest ${theme.chip}`}>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-widest shrink-0 ${theme.chip}`}
+                            >
                               E{protocol.intervalDays}D
                             </span>
                             {isActive && (
-                              <span className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-widest text-white/70">
+                              <span className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-widest text-white/70 shrink-0">
                                 Active
                               </span>
                             )}
@@ -895,109 +1189,164 @@ function App() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="border-white/15 text-white/70 hover:text-white"
+                                className="border-white/15 text-white/70 hover:text-white h-7 text-xs"
                                 onClick={() => handleSetActiveCycle(protocol)}
                               >
-                                <CheckCircle2 className="size-4 mr-2" />
+                                <CheckCircle2 className="size-3 mr-1" />
                                 Set active
                               </Button>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-white/50 hover:text-white shrink-0"
-                              onClick={() => toggleProtocolVisibility(protocol.id)}
-                              aria-label={isVisible ? "Hide cycle" : "Show cycle"}
-                            >
-                              {isVisible ? (
-                                <Eye className="size-4" />
-                              ) : (
-                                <EyeOff className="size-4" />
+                            <div className="flex items-center gap-1 ml-auto">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-white/70 hover:text-white size-7"
+                                onClick={() =>
+                                  toggleProtocolVisibility(protocol.id)
+                                }
+                                aria-label={
+                                  isVisible ? "Hide cycle" : "Show cycle"
+                                }
+                              >
+                                {isVisible ? (
+                                  <Eye className="size-4" />
+                                ) : (
+                                  <EyeOff className="size-4" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-white/70 hover:text-white size-7"
+                                onClick={() => handleEditCycle(protocol)}
+                                aria-label="Edit cycle"
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-white/70 hover:text-white size-7"
+                                onClick={() => handleTrashProtocol(protocol)}
+                                aria-label="Trash cycle"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 pt-2 border-t border-white/[0.04]">
+                            <span className="text-[10px] text-white/40 uppercase tracking-wider">
+                              Opacity
+                            </span>
+                            <input
+                              type="range"
+                              min="0.1"
+                              max="1"
+                              step="0.1"
+                              value={getProtocolOpacity(protocol.id)}
+                              onChange={(e) =>
+                                handleOpacityChange(
+                                  protocol.id,
+                                  parseFloat(e.target.value),
+                                )
+                              }
+                              className="flex-1 h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-amber-500"
+                            />
+                            <span className="text-[10px] text-white/50 w-8 text-right">
+                              {Math.round(
+                                getProtocolOpacity(protocol.id) * 100,
                               )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-white/50 hover:text-white shrink-0"
-                              onClick={() => handleEditCycle(protocol)}
-                              aria-label="Edit cycle"
-                            >
-                              <Pencil className="size-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-white/50 hover:text-white shrink-0"
-                              onClick={() => handleTrashProtocol(protocol)}
-                              aria-label="Trash cycle"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
+                              %
+                            </span>
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>
 
-                {showTrash && (trashedProtocols.length > 0 || trashedInjections.length > 0) && (
-                  <div className="mt-5 rounded-2xl border border-dashed border-white/10 bg-black/20 p-4">
-                    <p className="text-xs uppercase tracking-[0.3em] text-white/40">Trash</p>
-                    <div className="mt-3 space-y-3">
-                      {trashedProtocols.map((protocol) => (
-                        <div key={protocol.id} className="flex items-center justify-between text-sm">
-                          <span className="text-white/70">{protocol.name}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-white/60 hover:text-white"
-                            onClick={() => handleRestoreProtocol(protocol)}
+                {showTrash &&
+                  (trashedProtocols.length > 0 ||
+                    trashedInjections.length > 0) && (
+                    <div className="mt-5 rounded-2xl border border-dashed border-white/10 bg-black/20 p-4">
+                      <p className="text-xs uppercase tracking-[0.3em] text-white/70">
+                        Trash
+                      </p>
+                      <div className="mt-3 space-y-3">
+                        {trashedProtocols.map((protocol) => (
+                          <div
+                            key={protocol.id}
+                            className="flex items-center justify-between text-sm"
                           >
-                            <Undo2 className="size-4 mr-2" />
-                            Restore
-                          </Button>
-                        </div>
-                      ))}
-                      {trashedInjections.slice(0, 4).map((injection) => (
-                        <div key={injection.id} className="flex items-center justify-between text-sm">
-                          <span className="text-white/70">
-                            {formatDate(injection.date)} · {formatNumber(injection.doseMg)} mg
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-white/60 hover:text-white"
-                            onClick={() => handleRestoreInjection(injection)}
+                            <span className="text-white/70">
+                              {protocol.name}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-white/70 hover:text-white"
+                              onClick={() => handleRestoreProtocol(protocol)}
+                            >
+                              <Undo2 className="size-4 mr-2" />
+                              Restore
+                            </Button>
+                          </div>
+                        ))}
+                        {trashedInjections.slice(0, 4).map((injection) => (
+                          <div
+                            key={injection.id}
+                            className="flex items-center justify-between text-sm"
                           >
-                            <Undo2 className="size-4 mr-2" />
-                            Restore
-                          </Button>
-                        </div>
-                      ))}
+                            <span className="text-white/70">
+                              {formatDate(injection.date)} ·{" "}
+                              {formatNumber(injection.doseMg)} mg
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-white/70 hover:text-white"
+                              onClick={() => handleRestoreInjection(injection)}
+                            >
+                              <Undo2 className="size-4 mr-2" />
+                              Restore
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+              </motion.div>
 
-              <div className="rounded-3xl border border-white/10 bg-white/[0.05] shadow-[0_20px_50px_rgba(0,0,0,0.45)] p-5">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="rounded-2xl border border-white/8 bg-gradient-to-br from-white/[0.06] to-white/[0.02] shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-4"
+              >
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-white/40">Selected day</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/70">
+                      Selected day
+                    </p>
                     <p className="text-xl font-semibold text-white font-display">
                       {formatDate(selectedDate)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Status</p>
-                    <p className="text-sm font-semibold text-white">{selectedStatus}</p>
-                    <p className="text-xs text-white/40">{selectedDose}</p>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-white/70">
+                      Status
+                    </p>
+                    <p className="text-sm font-semibold text-white">
+                      {selectedStatus}
+                    </p>
+                    <p className="text-xs text-white/70">{selectedDose}</p>
                   </div>
                 </div>
 
                 <div className="mt-4 space-y-3">
                   {selectedScheduledProtocols.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-white/70">
                         Scheduled
                       </p>
                       {selectedScheduledProtocols.map((protocolId) => {
@@ -1014,14 +1363,17 @@ function App() {
                                 <p className="text-sm font-semibold text-white">
                                   {protocol.name}
                                 </p>
-                                <p className="text-xs text-white/40">
+                                <p className="text-xs text-white/70">
                                   {formatNumber(
-                                    protocol.doseMl * protocol.concentrationMgPerMl
+                                    protocol.doseMl *
+                                      protocol.concentrationMgPerMl,
                                   )}{" "}
                                   mg · {protocol.doseMl} mL
                                 </p>
                               </div>
-                              <span className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-widest ${theme.chip}`}>
+                              <span
+                                className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-widest ${theme.chip}`}
+                              >
                                 {isSelectedPast ? "Past" : "Scheduled"}
                               </span>
                             </div>
@@ -1032,11 +1384,13 @@ function App() {
                   )}
 
                   <div className="space-y-2">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/70">
                       Logged
                     </p>
                     {selectedLogs.length === 0 ? (
-                      <p className="text-sm text-white/40">No injections logged.</p>
+                      <p className="text-sm text-white/70">
+                        No injections logged.
+                      </p>
                     ) : (
                       selectedLogs.map((log) => {
                         const protocol = protocolLookup.get(log.protocolId);
@@ -1051,11 +1405,14 @@ function App() {
                                 <p className="text-sm font-semibold text-white">
                                   {protocol?.name ?? "Cycle"}
                                 </p>
-                                <p className="text-xs text-white/40">
-                                  {formatNumber(log.doseMg)} mg · {log.doseMl} mL
+                                <p className="text-xs text-white/70">
+                                  {formatNumber(log.doseMg)} mg · {log.doseMl}{" "}
+                                  mL
                                 </p>
                               </div>
-                              <span className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-widest ${theme.chip}`}>
+                              <span
+                                className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-widest ${theme.chip}`}
+                              >
                                 Logged
                               </span>
                             </div>
@@ -1072,7 +1429,7 @@ function App() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-white/50 hover:text-white"
+                                className="text-white/70 hover:text-white"
                                 onClick={() => handleTrashInjection(log)}
                               >
                                 <Trash2 className="size-4 mr-2" />
@@ -1085,29 +1442,46 @@ function App() {
                     )}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </section>
 
-            <section className="order-1 lg:order-2 min-h-0 flex flex-col rounded-[32px] border border-white/10 bg-[#0f131a]/80 shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
-              <div className="border-b border-white/10 px-4 py-3 md:px-6 bg-gradient-to-r from-white/5 to-transparent">
+            <section className="order-1 lg:order-2 h-[calc(100vh-120px)] flex flex-col rounded-2xl border border-white/8 bg-gradient-to-b from-[#0c0c0c] to-[#080808] shadow-[0_24px_60px_rgba(0,0,0,0.7)]">
+              <div className="border-b border-white/8 px-3 py-2 md:px-4 bg-gradient-to-r from-white/[0.04] to-transparent">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-white/60 hover:text-white"
+                      className="text-white/70 hover:text-white"
                       onClick={() => shiftMonth(-1)}
                       aria-label="Previous month"
                     >
                       <ChevronLeft className="size-5" />
                     </Button>
-                    <div className="text-3xl md:text-4xl font-semibold tracking-[0.08em] uppercase text-white font-display">
-                      {formatMonth(viewDate)}
-                    </div>
+                    <AnimatePresence
+                      mode="wait"
+                      initial={false}
+                      custom={monthDirection}
+                    >
+                      <motion.div
+                        key={viewDate.getMonth()}
+                        custom={monthDirection}
+                        initial={{
+                          opacity: 0,
+                          x: monthDirection > 0 ? 50 : -50,
+                        }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: monthDirection > 0 ? -50 : 50 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        className="text-3xl md:text-4xl font-semibold tracking-[0.08em] uppercase text-white font-display"
+                      >
+                        {formatMonth(viewDate)}
+                      </motion.div>
+                    </AnimatePresence>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-white/60 hover:text-white"
+                      className="text-white/70 hover:text-white"
                       onClick={() => shiftMonth(1)}
                       aria-label="Next month"
                     >
@@ -1131,19 +1505,25 @@ function App() {
                     </Button>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-widest text-white/50">
+                  <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-widest text-white/70">
                     <div className="flex items-center gap-2">
-                      <span className="text-white/80">{monthStats.scheduledDays}</span>
+                      <span className="text-white/90">
+                        {monthStats.scheduledDays}
+                      </span>
                       Scheduled days
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white/80">{monthStats.loggedDays}</span>
+                      <span className="text-white/90">
+                        {monthStats.loggedDays}
+                      </span>
                       Logged days
                     </div>
                     <div className="hidden sm:block h-4 w-px bg-white/10" />
                     {activeProtocol && (
-                      <div className="flex items-center gap-2 text-white/70">
-                        <span className={`size-2.5 rounded-full ${activeTheme.accent}`} />
+                      <div className="flex items-center gap-2 text-white/90">
+                        <span
+                          className={`size-2.5 rounded-full ${activeTheme.accent}`}
+                        />
                         Active cycle
                       </div>
                     )}
@@ -1156,7 +1536,7 @@ function App() {
                       Logged
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="size-2.5 rounded-full bg-white/20" />
+                      <span className="size-2.5 rounded-full bg-white/30" />
                       Past
                     </div>
                     <div className="flex items-center gap-2">
@@ -1166,7 +1546,7 @@ function App() {
                   </div>
                 </div>
                 {orderedProtocols.length > 0 && (
-                  <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-2 text-[10px] uppercase tracking-[0.26em] text-white/50">
+                  <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-2 text-[10px] uppercase tracking-[0.26em] text-white/70">
                     {orderedProtocols.map((protocol) => {
                       const theme = getProtocolTheme(protocol.themeKey);
                       const isActive = activeProtocol?.id === protocol.id;
@@ -1177,17 +1557,17 @@ function App() {
                           key={protocol.id}
                           type="button"
                           onClick={() => {
-                            if (!isActive) {
-                              handleSetActiveCycle(protocol);
-                            }
+                            if (!isActive) handleSetActiveCycle(protocol);
                           }}
                           className={`flex items-center gap-2 rounded-full border px-3 py-1 transition ${
                             isActive
                               ? `border-white/30 bg-white/15 text-white ${theme.glow}`
-                              : "border-white/10 bg-black/30 text-white/60 hover:text-white"
+                              : "border-white/10 bg-black/30 text-white/70 hover:text-white"
                           } ${isVisible ? "" : "opacity-30"} ${isDimmed ? "opacity-40" : ""}`}
                         >
-                          <span className={`size-2 rounded-full ${theme.accent}`} />
+                          <span
+                            className={`size-2 rounded-full ${theme.accent}`}
+                          />
                           <span className="truncate max-w-[140px] whitespace-nowrap">
                             {protocol.name}
                           </span>
@@ -1199,34 +1579,37 @@ function App() {
               </div>
 
               <div ref={calendarRef} className="flex-1 flex flex-col">
-                <div className="grid grid-cols-7 border-b border-white/15 bg-white/5">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                    <div
-                      key={day}
-                      className="py-3 text-center text-[12px] font-semibold uppercase tracking-[0.32em] text-white/40 font-display"
-                    >
-                      {day}
-                    </div>
-                  ))}
+                <div className="grid grid-cols-7 border-b border-white/8 bg-white/[0.03]">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                    (day) => (
+                      <div
+                        key={day}
+                        className="py-2 text-center text-[11px] font-semibold uppercase tracking-[0.25em] text-white/50 font-display"
+                      >
+                        {day}
+                      </div>
+                    ),
+                  )}
                 </div>
 
-                <div className="flex-1 grid grid-cols-7 grid-rows-6 divide-x divide-y divide-white/15">
+                <div
+                  className="flex-1 grid grid-cols-7 grid-rows-6 h-full divide-x divide-y divide-white/10"
+                  style={{ minHeight: 0 }}
+                >
                   {monthGrid.map(({ date, isCurrentMonth }) => {
                     const key = dateKey(date);
                     const dayLogs = logsByDate.get(key) ?? [];
                     const scheduledProtocols = scheduleByDate.get(key) ?? [];
-
                     const logProtocolIds = Array.from(
-                      new Set(dayLogs.map((log) => log.protocolId))
+                      new Set(dayLogs.map((log) => log.protocolId)),
                     );
-
                     const layerIds = orderedProtocols
-                      .filter((protocol) =>
-                        scheduledProtocols.includes(protocol.id) ||
-                        logProtocolIds.includes(protocol.id)
+                      .filter(
+                        (protocol) =>
+                          scheduledProtocols.includes(protocol.id) ||
+                          logProtocolIds.includes(protocol.id),
                       )
                       .map((protocol) => protocol.id);
-
                     const hasLogs = dayLogs.length > 0;
                     const isScheduled = scheduledProtocols.length > 0;
                     const hasActiveLayer = activeProtocol
@@ -1236,22 +1619,20 @@ function App() {
                     const isSelected = isSameDay(date, selectedDate);
                     const isPast = date < today;
                     const focusInactive = focusActiveEnabled && !hasActiveLayer;
-                    const focusTone = focusInactive && !isSelected ? "opacity-55" : "";
-
+                    const focusTone =
+                      focusInactive && !isSelected ? "opacity-55" : "";
                     const primaryProtocolId =
-                      activeProtocol &&
-                      layerIds.includes(activeProtocol.id)
+                      activeProtocol && layerIds.includes(activeProtocol.id)
                         ? activeProtocol.id
                         : layerIds[0];
-
                     const primaryTheme = getProtocolTheme(
                       primaryProtocolId
                         ? protocolLookup.get(primaryProtocolId)?.themeKey
-                        : null
+                        : null,
                     );
                     const primaryIsActive =
-                      !!activeProtocol && primaryProtocolId === activeProtocol.id;
-
+                      !!activeProtocol &&
+                      primaryProtocolId === activeProtocol.id;
                     const cellTone = hasLogs
                       ? "bg-white/[0.1]"
                       : isScheduled
@@ -1261,23 +1642,18 @@ function App() {
                             ? "bg-white/[0.015]"
                             : "bg-white/[0.03]"
                         : "";
-
                     const orderedLayerIds = primaryProtocolId
                       ? [
                           primaryProtocolId,
                           ...layerIds.filter((id) => id !== primaryProtocolId),
                         ]
                       : layerIds;
-
                     const summary = loggedSummary.get(key);
                     const doseLabel = summary
                       ? `${formatNumber(summary.totalMg)} mg`
                       : primaryProtocolId
-                        ? `${formatNumber(
-                            protocolDoseMap.get(primaryProtocolId) ?? 0
-                          )} mg`
+                        ? `${formatNumber(protocolDoseMap.get(primaryProtocolId) ?? 0)} mg`
                         : null;
-
                     const statusLabel = hasLogs
                       ? layerIds.length > 1
                         ? `${layerIds.length} layers`
@@ -1289,144 +1665,115 @@ function App() {
                             ? `${layerIds.length} layers`
                             : "Scheduled"
                         : "";
-
                     const statusTone = hasLogs
                       ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-100"
                       : statusLabel === "Past"
-                        ? "border-white/15 bg-white/10 text-white/60"
+                        ? "border-white/15 bg-white/10 text-white/70"
                         : primaryIsActive
                           ? primaryTheme.chip
                           : focusInactive
-                            ? "border-white/10 bg-white/5 text-white/35"
-                            : "border-white/10 bg-white/5 text-white/50";
-
-                    const layerNames = orderedLayerIds
-                      .map((id) => protocolLookup.get(id)?.name)
-                      .filter(Boolean)
-                      .join(" • ");
-
-                    const activeCycleLabel =
-                      primaryIsActive && primaryProtocolId
-                        ? protocolLookup.get(primaryProtocolId)?.name
-                        : null;
+                            ? "border-white/10 bg-white/5 text-white/50"
+                            : "border-white/10 bg-white/5 text-white/70";
 
                     return (
-                      <button
+                      <motion.button
                         key={key}
                         type="button"
                         onClick={() => handleSelectDate(date)}
-                        title={layerNames || undefined}
-                        className={`group relative flex flex-col justify-between p-3 md:p-4 text-left transition-colors ${focusTone} ${
-                          isCurrentMonth ? "bg-transparent" : "bg-white/[0.02] text-white/30"
-                        } ${cellTone} ${
-                          isSelected
-                            ? `ring-2 ${primaryTheme.ring} ring-inset`
-                            : hasActiveLayer
-                              ? `ring-1 ${primaryTheme.ring} ring-inset hover:bg-white/[0.05]`
-                              : "hover:bg-white/[0.05]"
-                        } ${primaryIsActive ? primaryTheme.glow : ""} ${
-                          isToday ? "shadow-[inset_0_0_0_1px_rgba(251,191,36,0.4)]" : ""
-                        }`}
+                        title={
+                          layerIds
+                            .map((id) => protocolLookup.get(id)?.name)
+                            .filter(Boolean)
+                            .join(" • ") || undefined
+                        }
+                        aria-label={`${formatDate(date)}. ${statusLabel || "No injection scheduled"}${doseLabel ? `. Dose: ${doseLabel}` : ""}`}
+                        aria-pressed={isSelected}
+                        aria-current={isToday ? "date" : undefined}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{ duration: 0.1 }}
+                        className={`group relative flex flex-col p-1.5 text-left transition-all duration-200 ${focusTone} ${isCurrentMonth ? "bg-black/20" : "bg-black/40 text-white/25"} ${cellTone} ${isSelected ? `ring-2 ${primaryTheme.ring} ring-inset bg-gradient-to-br from-white/10 to-transparent` : hasActiveLayer ? `ring-1 ${primaryTheme.ring} ring-inset hover:bg-white/[0.08]` : "hover:bg-white/[0.04]"} ${isToday ? "bg-gradient-to-br from-amber-500/10 to-orange-500/5 shadow-[inset_0_0_0_1px_rgba(251,146,60,0.6)]" : ""}`}
                       >
                         {hasActiveLayer && (
                           <span
-                            className={`absolute left-0 top-0 h-full ${primaryTheme.accent} opacity-80 ${
-                              primaryIsActive ? "w-1.5" : "w-1"
-                            }`}
+                            className={`absolute left-0 top-0 h-full ${primaryTheme.accent} opacity-80 ${primaryIsActive ? "w-1.5" : "w-1"}`}
                           />
                         )}
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-0.5">
                           <div>
                             <span
-                              className={`text-2xl md:text-3xl font-semibold leading-tight font-display tracking-tight ${
-                                isCurrentMonth ? "text-white" : "text-white/40"
-                              } ${isToday ? "text-amber-200" : ""}`}
+                              className={`text-xs font-semibold leading-none ${isCurrentMonth ? "text-white/70" : "text-white/25"} ${isToday ? "text-orange-400" : ""}`}
                             >
                               {date.getDate()}
                             </span>
-                            {isToday && (
-                              <p className="text-[10px] uppercase tracking-[0.2em] text-amber-200">
-                                Today
-                              </p>
-                            )}
                           </div>
-                          {statusLabel && (
+                          {isToday && (
+                            <span className="text-[8px] font-bold uppercase tracking-wider text-orange-400">
+                              Today
+                            </span>
+                          )}
+                          {!isToday && statusLabel && (
                             <span
-                              className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] ${statusTone}`}
+                              className={`rounded-sm px-1 py-0 text-[8px] font-semibold uppercase tracking-wide ${statusTone}`}
                             >
                               {statusLabel}
                             </span>
                           )}
                         </div>
-
-                        <div className="space-y-2">
+                        <div className="flex-1 flex flex-col justify-center gap-0.5 min-h-0">
                           {doseLabel && (
                             <p
-                              className={`text-base md:text-lg font-semibold tracking-tight ${
-                                primaryIsActive ? "text-white/90" : "text-white/55"
-                              }`}
+                              className={`text-base font-bold tracking-tight leading-none ${primaryIsActive ? "text-white" : "text-white/90"}`}
                             >
                               {doseLabel}
                             </p>
                           )}
-                          {!doseLabel && (hasLogs || isScheduled) && (
-                            <p className="text-xs text-white/40">Cycle day</p>
-                          )}
-                          {activeCycleLabel && (
-                            <p
-                              className={`text-[10px] uppercase tracking-[0.28em] ${primaryTheme.accentText} max-w-[90%] truncate drop-shadow-[0_0_12px_rgba(249,115,22,0.35)] ${
-                                isSelected ? "opacity-95" : "opacity-70"
-                              }`}
-                            >
-                              {activeCycleLabel}
-                            </p>
-                          )}
-
+                          {primaryProtocolId &&
+                            protocolLookup.get(primaryProtocolId)?.name && (
+                              <p
+                                className={`text-[9px] uppercase tracking-wider font-medium ${primaryTheme.accentText} truncate ${isSelected ? "opacity-100" : "opacity-80"}`}
+                              >
+                                {protocolLookup.get(primaryProtocolId)?.name}
+                              </p>
+                            )}
+                        </div>
+                        <div className="mt-auto">
                           {layerIds.length > 0 && (
-                            <div className="flex items-end gap-1">
-                              {orderedLayerIds.slice(0, 4).map((id) => {
+                            <div className="flex items-center gap-[2px]">
+                              {orderedLayerIds.slice(0, 5).map((id) => {
                                 const theme = getProtocolTheme(
-                                  protocolLookup.get(id)?.themeKey
+                                  protocolLookup.get(id)?.themeKey,
                                 );
                                 const isActiveLayer =
                                   activeProtocol && id === activeProtocol.id;
+                                const opacity = getProtocolOpacity(id);
+                                const effectiveOpacity = isActiveLayer
+                                  ? opacity
+                                  : focusActiveEnabled
+                                    ? opacity * 0.3
+                                    : opacity * 0.7;
                                 return (
                                   <span
                                     key={`${key}-${id}`}
-                                    className={`flex-1 rounded-full ${theme.accent} ${
-                                      isActiveLayer
-                                        ? "h-3 shadow-[0_0_12px_rgba(249,115,22,0.45)]"
-                                        : focusActiveEnabled
-                                          ? "h-1.5 opacity-25"
-                                          : "h-1.5 opacity-45"
-                                    }`}
+                                    className={`flex-1 h-1 rounded-full ${theme.accent}`}
+                                    style={{ opacity: effectiveOpacity }}
                                   />
                                 );
                               })}
-                              {layerIds.length > 4 && (
-                                <span className="text-[10px] text-white/40">
-                                  +{layerIds.length - 4}
+                              {layerIds.length > 5 && (
+                                <span className="text-[7px] text-white/50 ml-0.5">
+                                  +{layerIds.length - 5}
                                 </span>
                               )}
                             </div>
                           )}
                         </div>
-
                         {hasLogs && (
-                          <CheckCircle2 className="absolute bottom-3 right-3 size-5 text-cyan-300" />
+                          <div className="absolute top-1/2 right-1 -translate-y-1/2">
+                            <CheckCircle2 className="size-3.5 text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.6)]" />
+                          </div>
                         )}
-                        {!hasLogs && isScheduled && (
-                          <span
-                            className={`absolute bottom-3 right-3 size-3 rounded-full ${
-                              primaryIsActive
-                                ? primaryTheme.accent
-                                : focusInactive
-                                  ? "bg-white/20"
-                                  : "bg-white/40"
-                            }`}
-                          />
-                        )}
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>
@@ -1435,6 +1782,11 @@ function App() {
           </div>
         )}
       </main>
+
+      <MobileNav
+        onLogClick={() => handleOpenLogDialog()}
+        onCyclesClick={handleOpenCycleList}
+      />
 
       <CycleListDialog
         open={cycleListOpen}
@@ -1468,7 +1820,10 @@ function App() {
         onOpenChange={setProtocolDialogOpen}
         uid={user?.uid}
         mode={protocolDialogMode}
-        initialProtocol={editingProtocol ?? (protocolDialogMode === "edit" ? activeProtocol : null)}
+        initialProtocol={
+          editingProtocol ??
+          (protocolDialogMode === "edit" ? activeProtocol : null)
+        }
         defaultStartDate={selectedDate}
       />
     </div>
