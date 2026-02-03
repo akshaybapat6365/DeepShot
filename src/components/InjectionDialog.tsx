@@ -276,7 +276,7 @@ export function InjectionDialog({
             <Button
               type="submit"
               disabled={!canSubmit || isSaving}
-              className="bg-[#2DD4BF] text-black hover:bg-[#14B8A6] font-semibold border-none rounded-xl shadow-[0_4px_15px_rgba(45,212,191,0.4)]"
+              className="bg-[#FF9500] text-black hover:bg-[#FF6D00] font-semibold border-none rounded-xl shadow-[0_4px_15px_rgba(255,149,0,0.4)]"
             >
               {isSaving
                 ? "Saving..."

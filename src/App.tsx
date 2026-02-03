@@ -685,7 +685,7 @@ function App() {
                   whileTap={{ scale: 0.98 }}
                 >
                   <Button
-                    className="gap-2 bg-[#2DD4BF] hover:bg-[#14B8A6] text-black font-semibold shadow-[0_4px_15px_rgba(45,212,191,0.4)]"
+                    className="gap-2 bg-[#FF9500] hover:bg-[#FF6D00] text-black font-semibold shadow-[0_4px_15px_rgba(45,212,191,0.4)]"
                     onClick={() => handleOpenLogDialog()}
                     disabled={!activeProtocol}
                   >
@@ -735,7 +735,7 @@ function App() {
                 whileTap={{ scale: 0.98 }}
               >
                 <Button
-                  className="gap-2 bg-[#2DD4BF] hover:bg-[#14B8A6] text-black font-semibold shadow-[0_4px_15px_rgba(45,212,191,0.4)]"
+                  className="gap-2 bg-[#FF9500] hover:bg-[#FF6D00] text-black font-semibold shadow-[0_4px_15px_rgba(45,212,191,0.4)]"
                   onClick={handleLogin}
                 >
                   <LogIn className="size-4" />
@@ -755,7 +755,7 @@ function App() {
           <div className="flex-1 relative overflow-hidden">
             {/* Animated background elements */}
             <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute -top-1/2 -left-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-[#2DD4BF]/20 to-[#14B8A6]/10 blur-3xl animate-pulse" />
+              <div className="absolute -top-1/2 -left-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-[#FF9500]/20 to-[#FF6D00]/10 blur-3xl animate-pulse" />
               <div
                 className="absolute -bottom-1/2 -right-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#8B5CF6]/15 to-[#7C3AED]/10 blur-3xl animate-pulse"
                 style={{ animationDelay: "1s" }}
@@ -777,7 +777,7 @@ function App() {
                   transition={{ delay: 0.2, duration: 0.6 }}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6"
                 >
-                  <span className="w-2 h-2 rounded-full bg-[#2DD4BF] animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-[#FF9500] animate-pulse" />
                   <span className="text-sm text-white/70">
                     Now with enhanced tracking
                   </span>
@@ -789,7 +789,7 @@ function App() {
                   transition={{ delay: 0.3, duration: 0.6 }}
                   className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight"
                 >
-                  <span className="bg-gradient-to-r from-[#5EEAD4] via-[#2DD4BF] to-[#14B8A6] bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-[#FFB84D] via-[#FF9500] to-[#FF6D00] bg-clip-text text-transparent">
                     DeepShot
                   </span>
                   <br />
@@ -818,9 +818,9 @@ function App() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleLogin}
-                    className="group relative px-8 py-4 bg-gradient-to-r from-[#2DD4BF] to-[#14B8A6] rounded-xl font-semibold text-black text-lg overflow-hidden shadow-[0_0_40px_rgba(45,212,191,0.4)]"
+                    className="group relative px-8 py-4 bg-gradient-to-r from-[#FF9500] to-[#FF6D00] rounded-xl font-semibold text-black text-lg overflow-hidden shadow-[0_0_40px_rgba(45,212,191,0.4)]"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#5EEAD4] to-[#2DD4BF] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#FFB84D] to-[#FF9500] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <span className="relative flex items-center justify-center gap-3">
                       <LogIn className="size-5" />
                       Get Started
