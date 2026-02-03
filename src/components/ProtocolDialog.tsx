@@ -243,16 +243,16 @@ export function ProtocolDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 gap-0 border border-white/10 bg-[#0a0a0a]">
+      <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto p-6 gap-0 border border-white/10 bg-[#0a0a0a]">
         {/* Header */}
         <div
-          className="p-6 border-b border-white/5 sticky top-0 z-10"
+          className="-mx-6 -mt-6 p-6 border-b border-white/5 sticky top-0 z-10"
           style={{
             background: `linear-gradient(135deg, ${currentTheme.accentHex}20 0%, ${currentTheme.accentHex}10 100%)`,
           }}
         >
           <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold tracking-wide text-white">
+            <DialogTitle className="text-2xl font-semibold tracking-wide text-white pr-8">
               {mode === "edit" ? "Edit Cycle" : "New Cycle"}
             </DialogTitle>
             <DialogDescription className="text-white/50">
@@ -261,7 +261,7 @@ export function ProtocolDialog({
           </DialogHeader>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-0">
+        <div className="grid lg:grid-cols-2 gap-0 -mx-6">
           {/* Left Column - Main Form */}
           <form className="p-6 space-y-6" onSubmit={handleSubmit}>
             {/* Cycle Name */}
@@ -497,7 +497,7 @@ export function ProtocolDialog({
           </form>
 
           {/* Right Column - Schedule Calculator */}
-          <div className="p-6 border-l border-white/5 bg-white/[0.02]">
+          <div className="p-6 border-l border-white/5 bg-white/[0.02] -mr-6">
             <div className="space-y-6">
               {/* Calculator Header */}
               <div className="flex items-center gap-3">
