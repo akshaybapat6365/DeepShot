@@ -50,9 +50,9 @@ import { AdherenceRing } from "@/components/metrics/AdherenceRing";
 import { DosageTrendChart } from "@/components/metrics/DosageTrendChart";
 import { DashboardSkeleton } from "@/components/ui/LoadingSkeleton";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
-import { CustomCursor } from "@/components/custom-cursor";
 import { OrganicShapes } from "@/components/organic-shapes";
 import { PageTransition } from "@/components/page-transition";
+import { LearnMorePage } from "@/components/learn-more-page";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -208,6 +208,7 @@ function App() {
     Record<string, number>
   >({});
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showLearnMore, setShowLearnMore] = useState(false);
   const [monthDirection, setMonthDirection] = useState(1);
   const calendarRef = useRef<HTMLDivElement>(null);
 
@@ -656,11 +657,14 @@ function App() {
       <div className="min-h-screen app-shell text-foreground flex flex-col relative">
         <div className="aurora-background" />
         <OrganicShapes />
-        <CustomCursor />
         <SkipLink />
 
         {showOnboarding && (
           <OnboardingFlow onComplete={handleOnboardingComplete} />
+        )}
+
+        {showLearnMore && (
+          <LearnMorePage onClose={() => setShowLearnMore(false)} />
         )}
 
         <header className="shrink-0 border-b border-white/10 bg-[#07090d]/95 backdrop-blur-md sticky top-0 z-20 shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
@@ -839,6 +843,7 @@ function App() {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowLearnMore(true)}
                       className="px-8 py-4 rounded-xl font-semibold text-white border border-white/20 hover:bg-white/5 transition-colors text-lg"
                     >
                       Learn More
