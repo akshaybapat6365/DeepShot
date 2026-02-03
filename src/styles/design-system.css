@@ -1,0 +1,290 @@
+/* DeepShot Comprehensive Design System */
+
+:root {
+  /* Core Colors */
+  --ds-bg-primary: #000000;
+  --ds-bg-surface: #0a0a0a;
+  --ds-bg-elevated: #111111;
+
+  /* Primary - Teal */
+  --ds-primary-50: #f0fdfa;
+  --ds-primary-100: #ccfbf1;
+  --ds-primary-200: #99f6e4;
+  --ds-primary-300: #5eead4;
+  --ds-primary-400: #2dd4bf;
+  --ds-primary-500: #14b8a6;
+  --ds-primary-600: #0d9488;
+  --ds-primary-700: #0f766e;
+  --ds-primary-800: #115e59;
+  --ds-primary-900: #134e4a;
+
+  /* Accents */
+  --ds-coral: #f87171;
+  --ds-coral-light: #fca5a5;
+  --ds-coral-glow: rgba(248, 113, 113, 0.5);
+
+  --ds-amber: #f59e0b;
+  --ds-amber-light: #fcd34d;
+  --ds-amber-glow: rgba(245, 158, 11, 0.5);
+
+  --ds-emerald: #10b981;
+  --ds-emerald-light: #6ee7b7;
+  --ds-emerald-glow: rgba(16, 185, 129, 0.5);
+
+  --ds-blue: #3b82f6;
+  --ds-blue-light: #93c5fd;
+  --ds-blue-glow: rgba(59, 130, 246, 0.5);
+
+  --ds-violet: #8b5cf6;
+  --ds-violet-light: #c4b5fd;
+  --ds-violet-glow: rgba(139, 92, 246, 0.5);
+
+  --ds-rose: #fb7185;
+  --ds-rose-light: #fda4af;
+  --ds-rose-glow: rgba(251, 113, 133, 0.5);
+
+  /* Text */
+  --ds-text-primary: #ffffff;
+  --ds-text-secondary: rgba(255, 255, 255, 0.7);
+  --ds-text-tertiary: rgba(255, 255, 255, 0.5);
+  --ds-text-muted: rgba(255, 255, 255, 0.3);
+
+  /* Borders */
+  --ds-border-subtle: rgba(255, 255, 255, 0.06);
+  --ds-border-light: rgba(255, 255, 255, 0.1);
+  --ds-border-medium: rgba(255, 255, 255, 0.15);
+  --ds-border-strong: rgba(255, 255, 255, 0.2);
+}
+
+/* Animated Background - Deep Space with Subtle Colors */
+@keyframes ds-gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+    opacity: 0.8;
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 1;
+  }
+}
+
+.ds-background {
+  background:
+    radial-gradient(
+      ellipse at 0% 0%,
+      rgba(45, 212, 191, 0.08) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 100% 100%,
+      rgba(139, 92, 246, 0.06) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 50% 50%,
+      rgba(59, 130, 246, 0.04) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 80% 20%,
+      rgba(16, 185, 129, 0.05) 0%,
+      transparent 40%
+    ),
+    linear-gradient(180deg, #000000 0%, #050505 50%, #080808 100%);
+  background-size: 200% 200%;
+  animation: ds-gradient-shift 25s ease infinite;
+}
+
+/* Glass Cards */
+.ds-glass {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--ds-border-light);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Primary Button */
+.ds-btn-primary {
+  background: linear-gradient(
+    135deg,
+    var(--ds-primary-400) 0%,
+    var(--ds-primary-500) 100%
+  );
+  color: #000000;
+  font-weight: 600;
+  border: none;
+  box-shadow:
+    0 4px 15px rgba(45, 212, 191, 0.4),
+    0 0 30px rgba(45, 212, 191, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ds-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 25px rgba(45, 212, 191, 0.5),
+    0 0 40px rgba(45, 212, 191, 0.3);
+}
+
+/* Calendar Day Cell */
+.ds-calendar-day {
+  background: var(--ds-bg-surface);
+  border: 1px solid var(--ds-border-subtle);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ds-calendar-day:hover {
+  background: var(--ds-bg-elevated);
+  border-color: var(--ds-border-light);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Active/Scheduled Day */
+.ds-calendar-day-active {
+  background: linear-gradient(
+    135deg,
+    rgba(45, 212, 191, 0.12) 0%,
+    rgba(45, 212, 191, 0.03) 100%
+  );
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  box-shadow:
+    0 0 30px rgba(45, 212, 191, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Glass Pill Button */
+.glass-pill {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-pill:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.glass-pill.active {
+  background: linear-gradient(
+    135deg,
+    rgba(45, 212, 191, 0.15) 0%,
+    rgba(45, 212, 191, 0.05) 100%
+  );
+  border-color: rgba(45, 212, 191, 0.4);
+  box-shadow:
+    0 0 20px rgba(45, 212, 191, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Cycle Bar - With Proper Opacity Range */
+.ds-cycle-bar {
+  height: 10px;
+  border-radius: 6px;
+  transition:
+    opacity 0.3s ease,
+    transform 0.2s ease;
+}
+
+.ds-cycle-bar:hover {
+  transform: scaleY(1.2);
+}
+
+/* Opacity Classes - Dramatic Range */
+.ds-opacity-0 {
+  opacity: 0;
+}
+.ds-opacity-10 {
+  opacity: 0.1;
+}
+.ds-opacity-25 {
+  opacity: 0.25;
+}
+.ds-opacity-40 {
+  opacity: 0.4;
+}
+.ds-opacity-60 {
+  opacity: 0.6;
+}
+.ds-opacity-80 {
+  opacity: 0.8;
+}
+.ds-opacity-100 {
+  opacity: 1;
+}
+
+/* Glow Effects */
+.ds-glow-teal {
+  box-shadow: 0 0 40px rgba(45, 212, 191, 0.4);
+}
+.ds-glow-coral {
+  box-shadow: 0 0 40px rgba(248, 113, 113, 0.4);
+}
+.ds-glow-amber {
+  box-shadow: 0 0 40px rgba(245, 158, 11, 0.4);
+}
+.ds-glow-emerald {
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
+}
+.ds-glow-blue {
+  box-shadow: 0 0 40px rgba(59, 130, 246, 0.4);
+}
+.ds-glow-violet {
+  box-shadow: 0 0 40px rgba(139, 92, 246, 0.4);
+}
+.ds-glow-rose {
+  box-shadow: 0 0 40px rgba(251, 113, 133, 0.4);
+}
+
+/* Text Gradient */
+.ds-text-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--ds-primary-300) 0%,
+    var(--ds-primary-400) 50%,
+    var(--ds-primary-500) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Smooth Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

@@ -66,12 +66,12 @@ export function InjectionDialog({
     setDoseMl(
       initialInjection
         ? initialInjection.doseMl.toString()
-        : protocol?.doseMl.toString() ?? ""
+        : (protocol?.doseMl.toString() ?? ""),
     );
     setConcentration(
       initialInjection
         ? initialInjection.concentrationMgPerMl.toString()
-        : protocol?.concentrationMgPerMl.toString() ?? ""
+        : (protocol?.concentrationMgPerMl.toString() ?? ""),
     );
     setNotes(initialInjection?.notes ?? "");
   }, [open, initialInjection, initialDate, protocol]);
@@ -80,7 +80,10 @@ export function InjectionDialog({
   const concentrationNumber = Number(concentration);
   const doseMg = useMemo(() => {
     if (!doseMl.trim() || !concentration.trim()) return null;
-    if (!Number.isFinite(doseMlNumber) || !Number.isFinite(concentrationNumber)) {
+    if (
+      !Number.isFinite(doseMlNumber) ||
+      !Number.isFinite(concentrationNumber)
+    ) {
       return null;
     }
     return doseMlNumber * concentrationNumber;
@@ -169,7 +172,12 @@ export function InjectionDialog({
 
         <form className="p-6 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="injection-date" className="text-white/60 text-xs uppercase tracking-widest pl-1">Date</Label>
+            <Label
+              htmlFor="injection-date"
+              className="text-white/60 text-xs uppercase tracking-widest pl-1"
+            >
+              Date
+            </Label>
             <Input
               id="injection-date"
               type="date"
@@ -182,7 +190,12 @@ export function InjectionDialog({
 
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="dose-ml" className="text-white/60 text-xs uppercase tracking-widest pl-1">Volume (mL)</Label>
+              <Label
+                htmlFor="dose-ml"
+                className="text-white/60 text-xs uppercase tracking-widest pl-1"
+              >
+                Volume (mL)
+              </Label>
               <div className="relative">
                 <Input
                   id="dose-ml"
@@ -195,11 +208,18 @@ export function InjectionDialog({
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 rounded-xl pr-10"
                   required
                 />
-                <span className="absolute right-3 top-2.5 text-xs text-white/30">mL</span>
+                <span className="absolute right-3 top-2.5 text-xs text-white/30">
+                  mL
+                </span>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="concentration" className="text-white/60 text-xs uppercase tracking-widest pl-1">Concentration</Label>
+              <Label
+                htmlFor="concentration"
+                className="text-white/60 text-xs uppercase tracking-widest pl-1"
+              >
+                Concentration
+              </Label>
               <div className="relative">
                 <Input
                   id="concentration"
@@ -212,20 +232,29 @@ export function InjectionDialog({
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 rounded-xl pr-14"
                   required
                 />
-                <span className="absolute right-3 top-2.5 text-xs text-white/30">mg/mL</span>
+                <span className="absolute right-3 top-2.5 text-xs text-white/30">
+                  mg/mL
+                </span>
               </div>
             </div>
           </div>
 
           <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 flex justify-between items-center">
-            <span className="text-xs text-white/40 uppercase tracking-widest">Total Dosage</span>
+            <span className="text-xs text-white/40 uppercase tracking-widest">
+              Total Dosage
+            </span>
             <span className="text-lg font-light text-sky-200 drop-shadow-[0_0_8px_rgba(94,198,255,0.35)]">
               {doseMg !== null ? `${doseMg.toFixed(1)} mg` : "--"}
             </span>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes" className="text-white/60 text-xs uppercase tracking-widest pl-1">Notes</Label>
+            <Label
+              htmlFor="notes"
+              className="text-white/60 text-xs uppercase tracking-widest pl-1"
+            >
+              Notes
+            </Label>
             <Textarea
               id="notes"
               placeholder="Post-injection site, feeling, etc."
@@ -247,9 +276,13 @@ export function InjectionDialog({
             <Button
               type="submit"
               disabled={!canSubmit || isSaving}
-              className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-medium border-none rounded-xl"
+              className="bg-[#2DD4BF] text-black hover:bg-[#14B8A6] font-semibold border-none rounded-xl shadow-[0_4px_15px_rgba(45,212,191,0.4)]"
             >
-              {isSaving ? "Saving..." : isEditMode ? "Update Log" : "Log Injection"}
+              {isSaving
+                ? "Saving..."
+                : isEditMode
+                  ? "Update Log"
+                  : "Log Injection"}
             </Button>
           </DialogFooter>
         </form>

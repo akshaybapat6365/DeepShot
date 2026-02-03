@@ -120,13 +120,15 @@ const generateScheduleInRange = (
   const safeRangeEnd = startOfDay(rangeEnd);
   const safeEnd = endLimit ? startOfDay(endLimit) : safeRangeEnd;
 
-  if (safeEnd < safeRangeStart) return [];
+  // Allow past cycles to show in calendar view even if ended
+  const effectiveEnd = safeEnd < safeRangeStart ? safeRangeEnd : safeEnd;
+  if (effectiveEnd < safeRangeStart) return [];
 
   let current = alignToRangeStart(safeStart, intervalDays, safeRangeStart);
   if (current < safeStart) current = safeStart;
 
   const dates: Date[] = [];
-  while (current <= safeRangeEnd && current <= safeEnd) {
+  while (current <= safeRangeEnd && current <= effectiveEnd) {
     dates.push(current);
     current = addDays(current, intervalDays);
   }
@@ -213,14 +215,17 @@ function App() {
       toast.error("Could not initialize your profile.");
     });
 
-    // Check if user has seen onboarding
+    // Check if user has seen onboarding - check immediately to prevent flash
     const hasSeenOnboarding = localStorage.getItem(
       "deepshot-onboarding-complete",
     );
-    if (!hasSeenOnboarding && protocols.length === 0) {
+    const hasExistingData = protocols.length > 0 || injections.length > 0;
+
+    // Only show if: never seen AND no data AND not in middle of session
+    if (!hasSeenOnboarding && !hasExistingData && !user) {
       setShowOnboarding(true);
     }
-  }, [user, protocols.length]);
+  }, [user, protocols.length, injections.length]);
 
   useEffect(() => {
     if (!authError) return;
@@ -636,14 +641,14 @@ function App() {
 
   if (authLoading || protocolsLoading || injectionsLoading) {
     return (
-      <div className="min-h-screen app-shell text-foreground flex items-center justify-center">
+      <div className="min-h-screen epic-background text-foreground flex items-center justify-center">
         <DashboardSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen app-shell text-foreground flex flex-col">
+    <div className="min-h-screen epic-background text-foreground flex flex-col">
       <SkipLink />
 
       {showOnboarding && (
@@ -680,7 +685,7 @@ function App() {
                   whileTap={{ scale: 0.98 }}
                 >
                   <Button
-                    className="gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950"
+                    className="gap-2 bg-[#2DD4BF] hover:bg-[#14B8A6] text-black font-semibold shadow-[0_4px_15px_rgba(45,212,191,0.4)]"
                     onClick={() => handleOpenLogDialog()}
                     disabled={!activeProtocol}
                   >
@@ -730,7 +735,7 @@ function App() {
                 whileTap={{ scale: 0.98 }}
               >
                 <Button
-                  className="gap-2 bg-[#F97316] hover:bg-[#FB923C] text-slate-950"
+                  className="gap-2 bg-[#2DD4BF] hover:bg-[#14B8A6] text-black font-semibold shadow-[0_4px_15px_rgba(45,212,191,0.4)]"
                   onClick={handleLogin}
                 >
                   <LogIn className="size-4" />
@@ -750,9 +755,9 @@ function App() {
           <div className="flex-1 relative overflow-hidden">
             {/* Animated background elements */}
             <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute -top-1/2 -left-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-amber-500/20 to-orange-600/10 blur-3xl animate-pulse" />
+              <div className="absolute -top-1/2 -left-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-[#2DD4BF]/20 to-[#14B8A6]/10 blur-3xl animate-pulse" />
               <div
-                className="absolute -bottom-1/2 -right-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-violet-500/15 to-purple-600/10 blur-3xl animate-pulse"
+                className="absolute -bottom-1/2 -right-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#8B5CF6]/15 to-[#7C3AED]/10 blur-3xl animate-pulse"
                 style={{ animationDelay: "1s" }}
               />
             </div>
@@ -772,7 +777,7 @@ function App() {
                   transition={{ delay: 0.2, duration: 0.6 }}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6"
                 >
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-[#2DD4BF] animate-pulse" />
                   <span className="text-sm text-white/70">
                     Now with enhanced tracking
                   </span>
@@ -784,7 +789,7 @@ function App() {
                   transition={{ delay: 0.3, duration: 0.6 }}
                   className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight"
                 >
-                  <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-orange-500 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-[#5EEAD4] via-[#2DD4BF] to-[#14B8A6] bg-clip-text text-transparent">
                     DeepShot
                   </span>
                   <br />
@@ -813,9 +818,9 @@ function App() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleLogin}
-                    className="group relative px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl font-semibold text-black text-lg overflow-hidden shadow-[0_0_40px_rgba(245,158,11,0.4)]"
+                    className="group relative px-8 py-4 bg-gradient-to-r from-[#2DD4BF] to-[#14B8A6] rounded-xl font-semibold text-black text-lg overflow-hidden shadow-[0_0_40px_rgba(45,212,191,0.4)]"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#5EEAD4] to-[#2DD4BF] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <span className="relative flex items-center justify-center gap-3">
                       <LogIn className="size-5" />
                       Get Started
@@ -994,7 +999,7 @@ function App() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="rounded-2xl border border-white/8 bg-gradient-to-br from-white/[0.06] to-white/[0.02] shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-4"
+                className="card-soft p-4 hover-lift"
               >
                 <div className="flex items-center justify-between gap-4">
                   <div>
@@ -1072,7 +1077,7 @@ function App() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="rounded-2xl border border-white/8 bg-gradient-to-br from-white/[0.06] to-white/[0.02] shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-4"
+                className="card-soft p-4 hover-lift"
               >
                 <div className="flex items-center justify-center mb-3">
                   <AdherenceRing
@@ -1087,7 +1092,7 @@ function App() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
-                className="rounded-2xl border border-white/8 bg-gradient-to-br from-white/[0.06] to-white/[0.02] shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-4 min-h-[200px]"
+                className="card-soft p-4 min-h-[200px] hover-lift"
               >
                 <div className="flex items-center justify-between gap-4">
                   <div>
@@ -1321,7 +1326,7 @@ function App() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
-                className="rounded-2xl border border-white/8 bg-gradient-to-br from-white/[0.06] to-white/[0.02] shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-4"
+                className="card-soft p-4 hover-lift"
               >
                 <div className="flex items-center justify-between gap-4">
                   <div>
@@ -1445,7 +1450,7 @@ function App() {
               </motion.div>
             </section>
 
-            <section className="order-1 lg:order-2 h-[calc(100vh-120px)] flex flex-col rounded-2xl border border-white/8 bg-gradient-to-b from-[#0c0c0c] to-[#080808] shadow-[0_24px_60px_rgba(0,0,0,0.7)]">
+            <section className="order-1 lg:order-2 h-[calc(100vh-120px)] flex flex-col rounded-3xl glass-panel">
               <div className="border-b border-white/8 px-3 py-2 md:px-4 bg-gradient-to-r from-white/[0.04] to-transparent">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
@@ -1596,7 +1601,7 @@ function App() {
                   className="flex-1 grid grid-cols-7 grid-rows-6 h-full divide-x divide-y divide-white/10"
                   style={{ minHeight: 0 }}
                 >
-                  {monthGrid.map(({ date, isCurrentMonth }) => {
+                  {monthGrid.map(({ date, isCurrentMonth }, index) => {
                     const key = dateKey(date);
                     const dayLogs = logsByDate.get(key) ?? [];
                     const scheduledProtocols = scheduleByDate.get(key) ?? [];
@@ -1633,15 +1638,6 @@ function App() {
                     const primaryIsActive =
                       !!activeProtocol &&
                       primaryProtocolId === activeProtocol.id;
-                    const cellTone = hasLogs
-                      ? "bg-white/[0.1]"
-                      : isScheduled
-                        ? hasActiveLayer
-                          ? `bg-white/[0.12] ${primaryTheme.accentSoft}`
-                          : focusInactive
-                            ? "bg-white/[0.015]"
-                            : "bg-white/[0.03]"
-                        : "";
                     const orderedLayerIds = primaryProtocolId
                       ? [
                           primaryProtocolId,
@@ -1668,7 +1664,7 @@ function App() {
                     const statusTone = hasLogs
                       ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-100"
                       : statusLabel === "Past"
-                        ? "border-white/15 bg-white/10 text-white/70"
+                        ? primaryTheme.chip // Full opacity, same as active
                         : primaryIsActive
                           ? primaryTheme.chip
                           : focusInactive
@@ -1689,80 +1685,97 @@ function App() {
                         aria-label={`${formatDate(date)}. ${statusLabel || "No injection scheduled"}${doseLabel ? `. Dose: ${doseLabel}` : ""}`}
                         aria-pressed={isSelected}
                         aria-current={isToday ? "date" : undefined}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        transition={{ duration: 0.1 }}
-                        className={`group relative flex flex-col p-1.5 text-left transition-all duration-200 ${focusTone} ${isCurrentMonth ? "bg-black/20" : "bg-black/40 text-white/25"} ${cellTone} ${isSelected ? `ring-2 ${primaryTheme.ring} ring-inset bg-gradient-to-br from-white/10 to-transparent` : hasActiveLayer ? `ring-1 ${primaryTheme.ring} ring-inset hover:bg-white/[0.08]` : "hover:bg-white/[0.04]"} ${isToday ? "bg-gradient-to-br from-amber-500/10 to-orange-500/5 shadow-[inset_0_0_0_1px_rgba(251,146,60,0.6)]" : ""}`}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.01 }}
+                        whileHover={{
+                          scale: 1.03,
+                          transition: { duration: 0.15, ease: "easeOut" },
+                        }}
+                        whileTap={{ scale: 0.97 }}
+                        className={`group relative flex flex-col p-2 text-left overflow-hidden calendar-day-epic ${focusTone} ${isCurrentMonth ? "" : "text-white/20 opacity-60"} ${hasActiveLayer ? `calendar-day-active ${primaryTheme.ring}` : ""} ${isSelected ? `ring-2 ${primaryTheme.ring} z-10 shadow-lg` : ""} ${isToday ? "bg-gradient-to-b from-amber-500/20 to-transparent border-amber-500/30" : ""}`}
                       >
                         {hasActiveLayer && (
                           <span
                             className={`absolute left-0 top-0 h-full ${primaryTheme.accent} opacity-80 ${primaryIsActive ? "w-1.5" : "w-1"}`}
                           />
                         )}
-                        <div className="flex items-start justify-between gap-0.5">
-                          <div>
-                            <span
-                              className={`text-xs font-semibold leading-none ${isCurrentMonth ? "text-white/70" : "text-white/25"} ${isToday ? "text-orange-400" : ""}`}
-                            >
-                              {date.getDate()}
-                            </span>
-                          </div>
+                        <div className="flex items-start justify-between gap-1">
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            className={`text-sm font-bold ${isCurrentMonth ? "text-white" : "text-white/30"} ${isToday ? "text-amber-400" : ""} ${hasActiveLayer ? "group-hover:text-white" : ""}`}
+                          >
+                            {date.getDate()}
+                          </motion.div>
                           {isToday && (
-                            <span className="text-[8px] font-bold uppercase tracking-wider text-orange-400">
+                            <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[9px] font-bold uppercase tracking-wider text-amber-300">
                               Today
                             </span>
                           )}
                           {!isToday && statusLabel && (
                             <span
-                              className={`rounded-sm px-1 py-0 text-[8px] font-semibold uppercase tracking-wide ${statusTone}`}
+                              className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide ${statusTone}`}
                             >
                               {statusLabel}
                             </span>
                           )}
                         </div>
-                        <div className="flex-1 flex flex-col justify-center gap-0.5 min-h-0">
+                        <div className="flex-1 flex flex-col justify-center gap-1 min-h-0 w-full py-1">
                           {doseLabel && (
-                            <p
-                              className={`text-base font-bold tracking-tight leading-none ${primaryIsActive ? "text-white" : "text-white/90"}`}
+                            <motion.p
+                              initial={{ opacity: 0, x: -5 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.2, delay: 0.1 }}
+                              className={`text-lg font-bold tracking-tight leading-tight ${primaryIsActive ? "text-white" : "text-white/95"} drop-shadow-sm`}
                             >
                               {doseLabel}
-                            </p>
+                            </motion.p>
                           )}
                           {primaryProtocolId &&
                             protocolLookup.get(primaryProtocolId)?.name && (
-                              <p
-                                className={`text-[9px] uppercase tracking-wider font-medium ${primaryTheme.accentText} truncate ${isSelected ? "opacity-100" : "opacity-80"}`}
+                              <motion.p
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.2, delay: 0.15 }}
+                                className={`text-[10px] uppercase tracking-widest font-semibold ${primaryTheme.accentText} truncate w-full`}
                               >
                                 {protocolLookup.get(primaryProtocolId)?.name}
-                              </p>
+                              </motion.p>
                             )}
                         </div>
-                        <div className="mt-auto">
+                        <div className="mt-auto w-full pt-2">
                           {layerIds.length > 0 && (
-                            <div className="flex items-center gap-[2px]">
-                              {orderedLayerIds.slice(0, 5).map((id) => {
+                            <div className="flex items-center gap-1 w-full">
+                              {orderedLayerIds.slice(0, 4).map((id, idx) => {
                                 const theme = getProtocolTheme(
                                   protocolLookup.get(id)?.themeKey,
                                 );
-                                const isActiveLayer =
-                                  activeProtocol && id === activeProtocol.id;
                                 const opacity = getProtocolOpacity(id);
-                                const effectiveOpacity = isActiveLayer
-                                  ? opacity
-                                  : focusActiveEnabled
-                                    ? opacity * 0.3
-                                    : opacity * 0.7;
+                                const isFirst = idx === 0;
                                 return (
-                                  <span
+                                  <motion.span
                                     key={`${key}-${id}`}
-                                    className={`flex-1 h-1 rounded-full ${theme.accent}`}
-                                    style={{ opacity: effectiveOpacity }}
+                                    initial={{ scaleX: 0, opacity: 0 }}
+                                    animate={{
+                                      scaleX: 1,
+                                      opacity: opacity,
+                                    }}
+                                    transition={{
+                                      duration: 0.4,
+                                      delay: idx * 0.08,
+                                      ease: [0.4, 0, 0.2, 1],
+                                    }}
+                                    className={`flex-1 h-3 rounded-lg shot-indicator ${isFirst ? "ring-2 ring-white/40" : ""}`}
+                                    style={{
+                                      background: `linear-gradient(135deg, ${theme.accentHex} 0%, ${theme.accentHex}dd 100%)`,
+                                      boxShadow: `0 4px 15px ${theme.accentHex}60, 0 0 20px ${theme.accentHex}40`,
+                                    }}
                                   />
                                 );
                               })}
-                              {layerIds.length > 5 && (
-                                <span className="text-[7px] text-white/50 ml-0.5">
-                                  +{layerIds.length - 5}
+                              {layerIds.length > 4 && (
+                                <span className="text-[8px] font-medium text-white/60 ml-0.5 bg-black/40 px-1 rounded">
+                                  +{layerIds.length - 4}
                                 </span>
                               )}
                             </div>

@@ -74,12 +74,15 @@ export function ProtocolDialog({
   useEffect(() => {
     if (!open) return;
 
-    const seedDate = initialProtocol?.startDate ?? defaultStartDate ?? new Date();
+    const seedDate =
+      initialProtocol?.startDate ?? defaultStartDate ?? new Date();
     const intervalValue = initialProtocol?.intervalDays;
 
     setName(initialProtocol?.name ?? "New cycle");
     setStartDate(toInputDate(seedDate));
-    setEndDate(initialProtocol?.endDate ? toInputDate(initialProtocol.endDate) : "");
+    setEndDate(
+      initialProtocol?.endDate ? toInputDate(initialProtocol.endDate) : "",
+    );
     setIntervalDays(intervalValue?.toString() ?? "");
     setPresetKey(presetFromInterval(intervalValue));
     setDoseMl(initialProtocol?.doseMl.toString() ?? "");
@@ -197,8 +200,8 @@ export function ProtocolDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-panel border-white/10 sm:max-w-2xl p-0 overflow-hidden gap-0">
-        <div className="bg-gradient-to-r from-amber-500/20 to-sky-500/10 p-6 border-b border-white/5">
+      <DialogContent className="ds-glass border-white/10 sm:max-w-2xl p-0 overflow-hidden gap-0 max-h-[85vh] overflow-y-auto">
+        <div className="bg-gradient-to-r from-[#2DD4BF]/20 to-[#14B8A6]/10 p-6 border-b border-white/5 sticky top-0 z-10">
           <DialogHeader>
             <DialogTitle className="text-2xl font-semibold tracking-wide text-white font-display">
               {mode === "edit" ? "Edit Cycle" : "New Cycle"}
@@ -212,32 +215,60 @@ export function ProtocolDialog({
         <form className="p-6 space-y-6" onSubmit={handleSubmit}>
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="protocol-name" className="text-white/60 text-xs uppercase tracking-widest pl-1">Cycle Name</Label>
+              <Label
+                htmlFor="protocol-name"
+                className="text-white/60 text-xs uppercase tracking-widest pl-1"
+              >
+                Cycle Name
+              </Label>
               <Input
                 id="protocol-name"
                 placeholder="e.g. Cutting Phase"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 h-10 rounded-xl"
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-[#2DD4BF]/50 h-10 rounded-xl"
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="protocol-theme" className="text-white/60 text-xs uppercase tracking-widest pl-1">Cycle Theme</Label>
-              <div className="grid grid-cols-5 gap-2">
+            <div className="space-y-3">
+              <Label className="text-white/60 text-xs uppercase tracking-widest pl-1">
+                Cycle Color
+              </Label>
+              <div className="grid grid-cols-4 gap-3">
                 {PROTOCOL_THEMES.map((theme) => (
                   <button
                     key={theme.key}
                     type="button"
                     onClick={() => setThemeKey(theme.key)}
-                    className={`flex flex-col items-center justify-center rounded-xl border px-2 py-2 text-xs font-semibold uppercase tracking-wider transition ${
+                    className={`group relative flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-200 ${
                       theme.key === themeKey
-                        ? `${theme.border} ${theme.accentSoft} ${theme.glow}`
-                        : "border-white/10 bg-white/5 text-white/50"
+                        ? "border-white/30 bg-white/10"
+                        : "border-white/5 bg-white/5 hover:border-white/20 hover:bg-white/8"
                     }`}
                   >
-                    <span className={`mb-2 size-4 rounded-full ${theme.accent}`} />
-                    {theme.name}
+                    {/* Color Swatch */}
+                    <div
+                      className="w-10 h-10 rounded-lg shadow-lg transition-transform group-hover:scale-110"
+                      style={{
+                        background: `linear-gradient(135deg, ${theme.accentHex} 0%, ${theme.accentHex}dd 100%)`,
+                        boxShadow:
+                          theme.key === themeKey
+                            ? `0 0 20px ${theme.accentHex}60, 0 4px 10px ${theme.accentHex}40`
+                            : `0 2px 8px ${theme.accentHex}30`,
+                      }}
+                    />
+                    {/* Theme Name */}
+                    <span
+                      className={`text-sm font-medium ${
+                        theme.key === themeKey ? "text-white" : "text-white/60"
+                      }`}
+                    >
+                      {theme.name}
+                    </span>
+                    {/* Selected Indicator */}
+                    {theme.key === themeKey && (
+                      <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white shadow-lg" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -245,7 +276,9 @@ export function ProtocolDialog({
           </div>
 
           <div className="space-y-3">
-            <Label className="text-white/60 text-xs uppercase tracking-widest pl-1">Interval Presets</Label>
+            <Label className="text-white/60 text-xs uppercase tracking-widest pl-1">
+              Interval Presets
+            </Label>
             <div className="grid grid-cols-4 gap-2">
               {presets.map((preset) => (
                 <button
@@ -255,7 +288,11 @@ export function ProtocolDialog({
                     setIntervalDays(String(preset.days));
                     setPresetKey(preset.key);
                     const presetName = `${preset.label} Cycle`;
-                    if (name === "" || name === "New cycle" || name.includes("Cycle")) {
+                    if (
+                      name === "" ||
+                      name === "New cycle" ||
+                      name.includes("Cycle")
+                    ) {
                       setName(presetName);
                     }
                   }}
@@ -263,12 +300,18 @@ export function ProtocolDialog({
                     presetKey === preset.key ? "active" : ""
                   }`}
                 >
-                  <span className={`text-sm font-medium transition-colors ${
-                    presetKey === preset.key ? "text-amber-200" : "text-white/70 group-hover:text-white"
-                  }`}>
+                  <span
+                    className={`text-sm font-medium transition-colors ${
+                      presetKey === preset.key
+                        ? "text-[#5EEAD4]"
+                        : "text-white/70 group-hover:text-white"
+                    }`}
+                  >
                     {preset.label}
                   </span>
-                  <span className="text-[9px] text-white/30 uppercase tracking-tight">{preset.sub}</span>
+                  <span className="text-[9px] text-white/30 uppercase tracking-tight">
+                    {preset.sub}
+                  </span>
                 </button>
               ))}
             </div>
@@ -276,28 +319,43 @@ export function ProtocolDialog({
 
           <div className="grid gap-6 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="protocol-start" className="text-white/60 text-xs uppercase tracking-widest pl-1">Start Date</Label>
+              <Label
+                htmlFor="protocol-start"
+                className="text-white/60 text-xs uppercase tracking-widest pl-1"
+              >
+                Start Date
+              </Label>
               <Input
                 id="protocol-start"
                 type="date"
                 value={startDate}
                 onChange={(event) => setStartDate(event.target.value)}
-                className="bg-white/5 border-white/10 text-white/80 focus-visible:ring-amber-500/50 rounded-xl invert-calendar-icon"
+                className="bg-white/5 border-white/10 text-white/80 focus-visible:ring-[#2DD4BF]/50 rounded-xl invert-calendar-icon"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="protocol-end" className="text-white/60 text-xs uppercase tracking-widest pl-1">End Date (Optional)</Label>
+              <Label
+                htmlFor="protocol-end"
+                className="text-white/60 text-xs uppercase tracking-widest pl-1"
+              >
+                End Date (Optional)
+              </Label>
               <Input
                 id="protocol-end"
                 type="date"
                 value={endDate}
                 onChange={(event) => setEndDate(event.target.value)}
-                className="bg-white/5 border-white/10 text-white/80 focus-visible:ring-amber-500/50 rounded-xl invert-calendar-icon"
+                className="bg-white/5 border-white/10 text-white/80 focus-visible:ring-[#2DD4BF]/50 rounded-xl invert-calendar-icon"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="protocol-interval" className="text-white/60 text-xs uppercase tracking-widest pl-1">Interval (Days)</Label>
+              <Label
+                htmlFor="protocol-interval"
+                className="text-white/60 text-xs uppercase tracking-widest pl-1"
+              >
+                Interval (Days)
+              </Label>
               <Input
                 id="protocol-interval"
                 type="number"
@@ -306,7 +364,41 @@ export function ProtocolDialog({
                 placeholder="3"
                 value={intervalDays}
                 onChange={(event) => handleIntervalChange(event.target.value)}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 rounded-xl"
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-[#2DD4BF]/50 rounded-xl"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="protocol-end"
+                className="text-white/60 text-xs uppercase tracking-widest pl-1"
+              >
+                End Date (Optional)
+              </Label>
+              <Input
+                id="protocol-end"
+                type="date"
+                value={endDate}
+                onChange={(event) => setEndDate(event.target.value)}
+                className="bg-white/5 border-white/10 text-white/80 focus-visible:ring-[#2DD4BF]/50 rounded-xl invert-calendar-icon"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="protocol-interval"
+                className="text-white/60 text-xs uppercase tracking-widest pl-1"
+              >
+                Interval (Days)
+              </Label>
+              <Input
+                id="protocol-interval"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="3"
+                value={intervalDays}
+                onChange={(event) => handleIntervalChange(event.target.value)}
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-[#2DD4BF]/50 rounded-xl"
                 required
               />
             </div>
@@ -314,7 +406,12 @@ export function ProtocolDialog({
 
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="protocol-dose" className="text-white/60 text-xs uppercase tracking-widest pl-1">Volume (mL)</Label>
+              <Label
+                htmlFor="protocol-dose"
+                className="text-white/60 text-xs uppercase tracking-widest pl-1"
+              >
+                Volume (mL)
+              </Label>
               <div className="relative">
                 <Input
                   id="protocol-dose"
@@ -324,14 +421,21 @@ export function ProtocolDialog({
                   placeholder="0.35"
                   value={doseMl}
                   onChange={(event) => setDoseMl(event.target.value)}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 rounded-xl pr-10"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-[#2DD4BF]/50 rounded-xl pr-10"
                   required
                 />
-                <span className="absolute right-3 top-2.5 text-xs text-white/30">mL</span>
+                <span className="absolute right-3 top-2.5 text-xs text-white/30">
+                  mL
+                </span>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="protocol-concentration" className="text-white/60 text-xs uppercase tracking-widest pl-1">Concentration</Label>
+              <Label
+                htmlFor="protocol-concentration"
+                className="text-white/60 text-xs uppercase tracking-widest pl-1"
+              >
+                Concentration
+              </Label>
               <div className="relative">
                 <Input
                   id="protocol-concentration"
@@ -341,29 +445,38 @@ export function ProtocolDialog({
                   placeholder="200"
                   value={concentration}
                   onChange={(event) => setConcentration(event.target.value)}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 rounded-xl pr-14"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-[#2DD4BF]/50 rounded-xl pr-14"
                   required
                 />
-                <span className="absolute right-3 top-2.5 text-xs text-white/30">mg/mL</span>
+                <span className="absolute right-3 top-2.5 text-xs text-white/30">
+                  mg/mL
+                </span>
               </div>
             </div>
           </div>
 
           <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 flex justify-between items-center">
-            <span className="text-xs text-white/40 uppercase tracking-widest">Calculated Dose</span>
+            <span className="text-xs text-white/40 uppercase tracking-widest">
+              Calculated Dose
+            </span>
             <span className="text-lg font-light text-amber-200 drop-shadow-[0_0_8px_rgba(248,159,79,0.3)]">
               {doseMgPreview !== null ? `${doseMgPreview.toFixed(1)} mg` : "--"}
             </span>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="protocol-notes" className="text-white/60 text-xs uppercase tracking-widest pl-1">Notes</Label>
+            <Label
+              htmlFor="protocol-notes"
+              className="text-white/60 text-xs uppercase tracking-widest pl-1"
+            >
+              Notes
+            </Label>
             <Textarea
               id="protocol-notes"
               placeholder="Ester type, carrier oil, etc."
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-amber-500/50 rounded-xl resize-none"
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-[#2DD4BF]/50 rounded-xl resize-none"
             />
           </div>
 
@@ -379,9 +492,13 @@ export function ProtocolDialog({
             <Button
               type="submit"
               disabled={!canSubmit || isSaving}
-              className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-medium border-none rounded-xl"
+              className="bg-[#2DD4BF] text-black hover:bg-[#14B8A6] font-semibold border-none rounded-xl shadow-[0_4px_15px_rgba(45,212,191,0.4)]"
             >
-              {isSaving ? "Saving..." : mode === "edit" ? "Update Cycle" : "Create Cycle"}
+              {isSaving
+                ? "Saving..."
+                : mode === "edit"
+                  ? "Update Cycle"
+                  : "Create Cycle"}
             </Button>
           </DialogFooter>
         </form>
