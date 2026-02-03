@@ -31,16 +31,19 @@ const fromInputDate = (value: string) => {
 
 const presetFromInterval = (value?: number) => {
   if (value === 1) return "ED";
-  if (value === 2) return "E2D";
+  if (value === 2) return "EOD";
   if (value === 3) return "E3D";
+  if (value === 3.5) return "E3.5D";
+  if (value === 7) return "E7D";
   return null;
 };
 
 const presets = [
   { key: "ED", label: "ED", sub: "Every day", days: 1 },
   { key: "EOD", label: "EOD", sub: "Alt day", days: 2 },
-  { key: "E2D", label: "E2D", sub: "Every 2d", days: 2 },
   { key: "E3D", label: "E3D", sub: "Every 3d", days: 3 },
+  { key: "E3.5D", label: "E3.5D", sub: "2x weekly", days: 3.5 },
+  { key: "E7D", label: "E7D", sub: "Weekly", days: 7 },
 ];
 
 type ProtocolDialogProps = {
@@ -96,8 +99,8 @@ export function ProtocolDialog({
   const concentrationNumber = Number(concentration);
   const isIntervalValid =
     Number.isFinite(intervalNumber) &&
-    intervalNumber > 0 &&
-    Number.isInteger(intervalNumber);
+    intervalNumber >= 0.5 &&
+    (intervalNumber * 2) % 1 === 0; // Allow 0.5 increments (e.g., 3.5)
 
   const doseMgPreview = useMemo(() => {
     if (!doseMl.trim() || !concentration.trim()) return null;
@@ -359,9 +362,9 @@ export function ProtocolDialog({
               <Input
                 id="protocol-interval"
                 type="number"
-                min="1"
-                step="1"
-                placeholder="3"
+                min="0.5"
+                step="0.5"
+                placeholder="3.5"
                 value={intervalDays}
                 onChange={(event) => handleIntervalChange(event.target.value)}
                 className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-[#2DD4BF]/50 rounded-xl"
@@ -393,9 +396,9 @@ export function ProtocolDialog({
               <Input
                 id="protocol-interval"
                 type="number"
-                min="1"
-                step="1"
-                placeholder="3"
+                min="0.5"
+                step="0.5"
+                placeholder="3.5"
                 value={intervalDays}
                 onChange={(event) => handleIntervalChange(event.target.value)}
                 className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-[#2DD4BF]/50 rounded-xl"
