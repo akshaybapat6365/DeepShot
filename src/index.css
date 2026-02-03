@@ -215,19 +215,19 @@
 }
 
 @layer utilities {
-  .animate-in {
-    animation: animateIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  .animate-slide-up {
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   .animate-fade-up {
     animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  .animate-scale-in {
-    animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  .animate-scale-in-custom {
+    animation: scaleInCustom 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  @keyframes animateIn {
+  @keyframes slideUp {
     from {
       opacity: 0;
       transform: translateY(10px);
@@ -249,7 +249,7 @@
     }
   }
 
-  @keyframes scaleIn {
+  @keyframes scaleInCustom {
     from {
       opacity: 0;
       transform: scale(0.95);
